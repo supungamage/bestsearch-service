@@ -73,4 +73,20 @@ public class OrganizationServiceImpl implements OrganizationService {
                 .organizationType(organizationType)
                 .build()).viewAsOrganizationOutputDTO();
     }
+
+    @Override
+    public List<OrganizationOutputDTO> getActiveOrganizationsWithinRadius(double radius, double latitude, double longitude) {
+        return organizationRepository.findActiveOrganizationsWithinRadius(radius,latitude,longitude)
+            .stream()
+            .map(Organization::viewAsOrganizationOutputDTO)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrganizationOutputDTO> getOrderedActiveOrganizationsWithinRadius(double radius, double latitude, double longitude) {
+        return organizationRepository.findOrderedActiveOrganizationsWithinRadius(radius,latitude,longitude)
+            .stream()
+            .map(Organization::viewAsOrganizationOutputDTO)
+            .collect(Collectors.toList());
+    }
 }

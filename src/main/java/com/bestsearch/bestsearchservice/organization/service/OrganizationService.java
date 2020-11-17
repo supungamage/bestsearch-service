@@ -14,4 +14,10 @@ public interface OrganizationService {
     OrganizationOutputDTO getOrganizationById(long id);
 
     OrganizationOutputDTO updateOrganization(long id, OrganizationInputDTO organizationInputDTO);
+
+    List<OrganizationOutputDTO> getActiveOrganizationsWithinRadius(double radius, double latitude, double longitude);
+
+    List<OrganizationOutputDTO> getOrderedActiveOrganizationsWithinRadius(double radius, double latitude, double longitude);
+
+
 }
