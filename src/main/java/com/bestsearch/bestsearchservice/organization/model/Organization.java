@@ -11,12 +11,16 @@ import lombok.experimental.SuperBuilder;
 
 import javax.persistence.*;
 
+import org.locationtech.jts.geom.Point;
+
 @Entity
 @Table(name = "organization")
 @Getter
 @SuperBuilder
 @NoArgsConstructor
 public class Organization extends Auditable<String> {
+
+//	private static final long serialVersionUID = 1L;
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator="org_seq")
@@ -45,6 +49,9 @@ public class Organization extends Auditable<String> {
 	private boolean active = true;
 
 	private String address;
+
+	@Column(name = "geom", columnDefinition = "Geometry")
+	public Point point;
 
 	@JsonIgnore
 	public OrganizationOutputDTO viewAsOrganizationOutputDTO() {

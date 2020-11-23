@@ -36,6 +36,8 @@ public class OrderAssignmentService {
         orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
 
         // TODO: update order status and assign organization
+        // TODO: update order assign as CANCELLED
+        // TODO: Push cancelled status to other organizations - WS
       }
 
     } else if(orderAssignmentDTO.getOrderType() == OrderType.CLOSEST) {
@@ -45,14 +47,17 @@ public class OrderAssignmentService {
         orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
 
         // Get next order assignment and send
-        List<OrderAssignment> orderAssignments = orderAssignmentRepository.findByOrderId();
+        List<OrderAssignment> orderAssignments = orderAssignmentRepository.findByOrderId(orderAssignmentDTO.getOrderId()); // TODO: not rejected
+        // TODO: Push order assignment to next
+        // TODO: If all are rejected, increase the radius and query again
 
 
       } else if (orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.ACCEPTED){
         // update order assignment status
         orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
 
-        // update order status and assign organization
+        // TODO: update order status and assign organization
+        // TODO: update order assign as CANCELLED
       }
     }
   }

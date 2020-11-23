@@ -22,12 +22,12 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
         , nativeQuery = true)
     List<Organization> findActiveOrganizationsWithinRadius( double radius, double latitude, double longitude);
 
-    @Query(value = "SELECT *,ST_Distance(geom,'SRID=4326;POINT(:latitude :longitude )'::geometry) "
-        + "FROM organization "
+    @Query(value = "SELECT *, ST_Distance(geom,ST_SetSRID(ST_Point(:longitude, :latitude),4326)) AS distance "
+        + "FROM organization org "
         + "where active = true "
         + "ORDER BY "
-        + "sb.geom <->'SRID=4326;POINT(:latitude :longitude )'::geometry "
+        + "org.geom <-> ST_SetSRID(ST_Point(:longitude, :latitude),4326) "
         + "LIMIT 10; "
         , nativeQuery = true)
-    List<Organization> findOrderedActiveOrganizationsWithinRadius( double radius, double latitude, double longitude);
+    List<Organization> findOrderedActiveOrganizationsWithinRadius(  double latitude, double longitude);
 }

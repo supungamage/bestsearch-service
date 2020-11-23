@@ -4,7 +4,7 @@ import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import org.mapstruct.Mapper;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface OrderAssignmentMapper {
 
   OrderAssignmentDTO toOrderAssignmentDTO(OrderAssignment orderAssignment);
