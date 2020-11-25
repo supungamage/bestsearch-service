@@ -8,6 +8,7 @@ import com.bestsearch.bestsearchservice.orderAssign.matchingEngine.MatchClosest;
 import com.bestsearch.bestsearchservice.orderAssign.matchingEngine.MatchImmediate;
 import com.bestsearch.bestsearchservice.orderAssign.matchingEngine.MatchingContext;
 import com.bestsearch.bestsearchservice.orderAssign.matchingEngine.MatchingFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
@@ -17,14 +18,22 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
+@Slf4j
 @Component
 @Lazy
 public class SQSListener {
 
+  private MatchingFactory matchingFactory;
+
+  public SQSListener(MatchingFactory matchingFactory) {
+    this.matchingFactory = matchingFactory;
+  }
+
   @SqsListener(value = "${aws.sqs.bdeOutput}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
   public void onMessage(OrderOutputDTO orderOutputDTO){
+    log.info("New order received for matching engine", orderOutputDTO.getOrderRef());
     if(Objects.nonNull(orderOutputDTO) && Objects.nonNull(orderOutputDTO.getId())) {
-      new MatchingContext(new MatchingFactory().getMatch(orderOutputDTO)).doMatch();
+      new MatchingContext(matchingFactory.getMatch(orderOutputDTO.getOrderType())).doMatch(orderOutputDTO);
     }
   }
 }

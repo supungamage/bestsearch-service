@@ -1,65 +1,60 @@
 package com.bestsearch.bestsearchservice.orderAssign.service;
 
 
+import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.mapper.OrderAssignmentMapper;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignStatus;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.orderAssign.repository.OrderAssignmentRepository;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OrderAssignmentService {
 
-  @Autowired
-  OrderAssignmentRepository orderAssignmentRepository;
+  private final OrderAssignmentRepository orderAssignmentRepository;
 
-  @Autowired
-  OrderAssignmentMapper orderAssignmentMapper;
+  private final OrderAssignmentMapper orderAssignmentMapper;
 
-  public void saveOrderAssignment(List<OrderAssignment> assignments){
+  private final String timeFlyPeriod;
+
+  public OrderAssignmentService(final OrderAssignmentRepository orderAssignmentRepository,
+                                final OrderAssignmentMapper orderAssignmentMapper,
+                                @Value("${order.assignment.timeFly.hours}") String timeFlyPeriod) {
+    this.orderAssignmentRepository = orderAssignmentRepository;
+    this.orderAssignmentMapper = orderAssignmentMapper;
+    this.timeFlyPeriod = timeFlyPeriod;
+  }
+
+  public void saveOrderAssignments(List<OrderAssignment> assignments){
     orderAssignmentRepository.saveAll(assignments);
   }
 
-  // TODO: is this the best way of handling?
-  public void updateOrderAssignmentStatus(OrderAssignmentDTO orderAssignmentDTO){
-    if(orderAssignmentDTO.getOrderType() == OrderType.IMMEDIATE){
+  public void saveOrderAssignment(OrderAssignmentDTO orderAssignmentDTO) {
+    orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
+  }
 
-      if(orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.REJECTED){
-        // update order assignment status
-        orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
-      } else if (orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.ACCEPTED){
-        // update order assignment status
-        orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
+  public List<OrderAssignmentDTO> findByOrderId(long orderId) {
+    return orderAssignmentRepository.findByOrderId(orderId).stream()
+            .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());// TODO: not rejected
+  }
 
-        // TODO: update order status and assign organization
-        // TODO: update order assign as CANCELLED
-        // TODO: Push cancelled status to other organizations - WS
-      }
+  public List<OrderAssignment> findTimeFlyOrders(OrderType orderType) {
+    LocalDateTime timeFlyTime = LocalDateTime.now().minusHours(Integer.valueOf(timeFlyPeriod));
+    return orderAssignmentRepository.findByAssignedStatusAndOrderTypeAndAssignedDateBefore(OrderAssignStatus.PENDING, orderType, timeFlyTime);
+  }
 
-    } else if(orderAssignmentDTO.getOrderType() == OrderType.CLOSEST) {
-
-      if(orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.REJECTED){
-        // update order assignment status
-        orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
-
-        // Get next order assignment and send
-        List<OrderAssignment> orderAssignments = orderAssignmentRepository.findByOrderId(orderAssignmentDTO.getOrderId()); // TODO: not rejected
-        // TODO: Push order assignment to next
-        // TODO: If all are rejected, increase the radius and query again
-
-
-      } else if (orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.ACCEPTED){
-        // update order assignment status
-        orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
-
-        // TODO: update order status and assign organization
-        // TODO: update order assign as CANCELLED
-      }
-    }
+  public OrderAssignment findNextAssignment(long orderId, OrderAssignStatus orderAssignStatus, int priority) {
+    return orderAssignmentRepository.findByOrderIdAndAssignedStatusAndPriority(orderId, orderAssignStatus, priority);
   }
 
 }

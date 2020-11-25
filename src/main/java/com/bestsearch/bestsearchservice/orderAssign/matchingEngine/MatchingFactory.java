@@ -1,15 +1,28 @@
 package com.bestsearch.bestsearchservice.orderAssign.matchingEngine;
 
-import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
+import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
+import org.springframework.stereotype.Component;
 
+@Component
 public class MatchingFactory {
 
-  public IMatchBehaviour getMatch(OrderOutputDTO orderOutputDTO){
-    switch (orderOutputDTO.getOrderType()){
-      case CLOSEST: return  new MatchClosest(orderOutputDTO);
-      case IMMEDIATE: return  new MatchImmediate(orderOutputDTO);
-      case PREFERRED: return new MatchImmediate();
+  private final MatchClosest matchClosest;
+  private final MatchImmediate matchImmediate;
+  private final MatchPreferred matchPreferred;
+
+  public MatchingFactory(final MatchClosest matchClosest,
+                         final MatchImmediate matchImmediate,
+                         final MatchPreferred matchPreferred) {
+    this.matchClosest = matchClosest;
+    this.matchImmediate = matchImmediate;
+    this.matchPreferred = matchPreferred;
+  }
+
+  public IMatchBehaviour getMatch(OrderType orderType){
+    switch (orderType){
+      case IMMEDIATE: return matchImmediate;
+      case PREFERRED: return matchPreferred;
+      default: return matchClosest;
     }
-    return null;
   }
 }
