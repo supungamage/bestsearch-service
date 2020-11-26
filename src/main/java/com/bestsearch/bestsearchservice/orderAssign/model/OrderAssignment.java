@@ -2,6 +2,7 @@ package com.bestsearch.bestsearchservice.orderAssign.model;
 
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
+import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.share.audit.Auditable;
 
@@ -40,7 +41,7 @@ public class OrderAssignment extends Auditable<String> {
   private Long organizationId;
   private LocalDateTime assignedDate;
   @Enumerated(EnumType.ORDINAL)
-  private OrderAssignStatus assignedStatus;
+  private Status assignedStatus;
   @Enumerated(EnumType.ORDINAL)
   private OrderType orderType;
   private int priority;

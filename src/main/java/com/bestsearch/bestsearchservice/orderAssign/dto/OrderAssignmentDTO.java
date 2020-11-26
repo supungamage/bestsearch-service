@@ -1,10 +1,9 @@
 package com.bestsearch.bestsearchservice.orderAssign.dto;
 
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
-import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignStatus;
 
+import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import java.time.LocalDateTime;
-import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,7 +20,7 @@ public class OrderAssignmentDTO {
   private Long orderId;
   private Long organizationId;
   private LocalDateTime assignedDate;
-  private OrderAssignStatus assignedStatus;
+  private Status assignedStatus;
   private OrderType orderType;
   private int priority;
 

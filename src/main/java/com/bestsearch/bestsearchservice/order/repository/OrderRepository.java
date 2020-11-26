@@ -16,6 +16,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query(value = "UPDATE Order o SET o.status = ?2 WHERE o.id = ?1")
     void updateOrderStatus(long id, Status toStatus);
 
+    @Modifying
+    @Query(value = "UPDATE Order o SET o.status = ?2, o.organizationId = ?3 WHERE o.id = ?1")
+    void updateOrderStatusAndOrganization(long id, Status toStatus, long organizationId);
+
     @Query(value = "SELECT nextval('order_seq')", nativeQuery = true)
     long getNextId();
 

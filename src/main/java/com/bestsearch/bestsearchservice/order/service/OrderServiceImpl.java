@@ -90,6 +90,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public void changeOrderStatusAndOrganization(long id, Status toStatus,long organizationId ) {
+        orderRepository.updateOrderStatusAndOrganization(id, toStatus, organizationId);
+    }
+
+    @Override
     public OrderOutputDTO updateOrder(long id, OrderInputDTO orderInputDTO) {
         return orderRepository.save(Order.builder()
                 .id(id)

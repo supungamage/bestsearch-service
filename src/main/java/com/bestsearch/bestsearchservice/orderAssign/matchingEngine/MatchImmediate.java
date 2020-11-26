@@ -2,19 +2,17 @@ package com.bestsearch.bestsearchservice.orderAssign.matchingEngine;
 
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
+import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.mapper.OrderAssignmentMapper;
-import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignStatus;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.orderAssign.service.OrderAssignmentService;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
@@ -53,7 +51,7 @@ public class MatchImmediate implements IMatchBehaviour{
                   .orderId(orderOutputDTO.getId())
                   .organizationId(org.getId())
                   .assignedDate(LocalDateTime.now())
-                  .assignedStatus(OrderAssignStatus.PENDING)
+                  .assignedStatus(Status.PENDING)
                   .orderType(OrderType.IMMEDIATE)
                   .build()
       ).collect(
@@ -70,10 +68,10 @@ public class MatchImmediate implements IMatchBehaviour{
 
   @Override
   public void match(OrderAssignmentDTO orderAssignmentDTO) {
-    if(orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.REJECTED){
+    if(orderAssignmentDTO.getAssignedStatus() == Status.REJECTED){
       // update order assignment status
       orderAssignmentService.saveOrderAssignment(orderAssignmentDTO);
-    } else if (orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.ACCEPTED){
+    } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED){
       // update order assignment status
       orderAssignmentService.saveOrderAssignment(orderAssignmentDTO);
 

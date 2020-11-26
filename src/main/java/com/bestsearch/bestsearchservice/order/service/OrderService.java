@@ -15,6 +15,7 @@ public interface OrderService {
     OrderOutputDTO getOrderById(long id);
     OrderOutputDTO getOrderByRef(String orderRef, long organizationTypeId);
     void changeOrderStatus(long id, Status toStatus);
+    void changeOrderStatusAndOrganization(long id, Status toStatus,long organizationId );
     OrderOutputDTO updateOrder(long id, OrderInputDTO orderInputDTO);
     List<OrderOutputDTO> getOrders();
     Map<LocalDate, List<OrderOutputDTO>> getCurrentOrders(long orgTypeId, long userId);

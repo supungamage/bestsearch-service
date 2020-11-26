@@ -1,11 +1,14 @@
 package com.bestsearch.bestsearchservice.orderAssign.matchingEngine;
 
 
+import static java.util.stream.Collectors.toList;
+
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
+import com.bestsearch.bestsearchservice.order.model.enums.Status;
+import com.bestsearch.bestsearchservice.order.service.OrderService;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.mapper.OrderAssignmentMapper;
-import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignStatus;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.orderAssign.service.OrderAssignmentService;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
@@ -13,13 +16,10 @@ import com.bestsearch.bestsearchservice.organization.service.OrganizationService
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.aspectj.weaver.ast.Or;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +27,8 @@ import org.springframework.stereotype.Component;
 public class MatchClosest implements IMatchBehaviour {
 
   private final OrganizationService organizationService;
+
+  private final OrderService orderService;
 
   private final OrderAssignmentService orderAssignmentService;
 
@@ -37,11 +39,13 @@ public class MatchClosest implements IMatchBehaviour {
   public MatchClosest(final OrganizationService organizationService,
                       final OrderAssignmentService orderAssignmentService,
                       final SimpMessagingTemplate simpMessagingTemplate,
-                      final OrderAssignmentMapper orderAssignmentMapper) {
+                      final OrderAssignmentMapper orderAssignmentMapper,
+                      final OrderService orderService) {
     this.organizationService = organizationService;
     this.orderAssignmentService = orderAssignmentService;
     this.simpMessagingTemplate = simpMessagingTemplate;
     this.orderAssignmentMapper = orderAssignmentMapper;
+    this.orderService = orderService;
   }
 
   @Override
@@ -57,7 +61,7 @@ public class MatchClosest implements IMatchBehaviour {
             .orderId(orderOutputDTO.getId())
             .organizationId(org.getId())
             .assignedDate(LocalDateTime.now())
-            .assignedStatus(OrderAssignStatus.PENDING)
+            .assignedStatus(Status.PENDING)
             .orderType(OrderType.CLOSEST)
             .build()
     ).collect(
@@ -72,22 +76,38 @@ public class MatchClosest implements IMatchBehaviour {
 
   @Override
   public void match(OrderAssignmentDTO orderAssignmentDTO) {
-    if(orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.REJECTED){
+    if(orderAssignmentDTO.getAssignedStatus() == Status.REJECTED){
       // update order assignment status
       orderAssignmentService.saveOrderAssignment(orderAssignmentDTO);
 
       // Get next order assignment and send
-      List<OrderAssignmentDTO> orderAssignments = orderAssignmentService.findByOrderId(orderAssignmentDTO.getOrderId()); // TODO: not rejected
-      // TODO: Push order assignment to next
+      List<OrderAssignmentDTO> orderAssignments = orderAssignmentService.findActiveOrdersByOrderId(orderAssignmentDTO.getOrderId());
+      simpMessagingTemplate.convertAndSend("/topic/hello", List.of(orderAssignments.get(0)));
+
       // TODO: If all are rejected, increase the radius and query again
 
 
-    } else if (orderAssignmentDTO.getAssignedStatus() == OrderAssignStatus.ACCEPTED){
+    } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED){
       // update order assignment status
       orderAssignmentService.saveOrderAssignment(orderAssignmentDTO);
 
-      // TODO: update order status and assign organization
-      // TODO: update order assign as CANCELLED
+      orderService.changeOrderStatusAndOrganization(
+          orderAssignmentDTO.getOrderId(),
+          orderAssignmentDTO.getAssignedStatus(),
+          orderAssignmentDTO.getOrganizationId());
+
+
+      List<OrderAssignmentDTO> orderAssignmentsToCancel = orderAssignmentService.findNonActiveOrdersByOrderId(orderAssignmentDTO.getOrderId());
+      List<OrderAssignment> cancelledOrderAssignments = orderAssignmentsToCancel.stream().map(oa -> {
+        oa.setAssignedStatus(Status.CANCELLED);
+        return oa;
+      }).map(orderAssignmentMapper::toOrderAssignment).collect(toList());
+
+      orderAssignmentService.saveOrderAssignments(cancelledOrderAssignments);
+
+
+
+
     }
 
   }
@@ -99,14 +119,14 @@ public class MatchClosest implements IMatchBehaviour {
     timeFlyOrderAssignments.forEach(timeFlyOrderAssignment -> {
       List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
       List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
-      timeFlyOrderAssignment.setAssignedStatus(OrderAssignStatus.CANCELLED);
+      timeFlyOrderAssignment.setAssignedStatus(Status.CANCELLED);
       toBeSavedAssignments.add(timeFlyOrderAssignment);
       toBeSentOrders.add(timeFlyOrderAssignment.viewAsOrderAssignmentDTO());
       OrderAssignment nextAssignment = orderAssignmentService.findNextAssignment(timeFlyOrderAssignment.getOrderId(),
-              OrderAssignStatus.INITIAL, timeFlyOrderAssignment.getPriority() + 1);
+          Status.INITIAL, timeFlyOrderAssignment.getPriority() + 1);
 
       if(Objects.nonNull(nextAssignment)) {
-        nextAssignment.setAssignedStatus(OrderAssignStatus.PENDING);
+        nextAssignment.setAssignedStatus(Status.PENDING);
         nextAssignment.setAssignedDate(LocalDateTime.now());
         toBeSavedAssignments.add(nextAssignment);
         toBeSentOrders.add(nextAssignment.viewAsOrderAssignmentDTO());

@@ -1,20 +1,17 @@
 package com.bestsearch.bestsearchservice.orderAssign.service;
 
 
-import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
+import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.mapper.OrderAssignmentMapper;
-import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignStatus;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.orderAssign.repository.OrderAssignmentRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -48,12 +45,22 @@ public class OrderAssignmentService {
             .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());// TODO: not rejected
   }
 
-  public List<OrderAssignment> findTimeFlyOrders(OrderType orderType) {
-    LocalDateTime timeFlyTime = LocalDateTime.now().minusHours(Integer.valueOf(timeFlyPeriod));
-    return orderAssignmentRepository.findByAssignedStatusAndOrderTypeAndAssignedDateBefore(OrderAssignStatus.PENDING, orderType, timeFlyTime);
+  public List<OrderAssignmentDTO> findActiveOrdersByOrderId(long orderId) {
+    return orderAssignmentRepository.findByOrderIdAndAssignedStatusNot(orderId, Status.REJECTED).stream()
+        .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());
   }
 
-  public OrderAssignment findNextAssignment(long orderId, OrderAssignStatus orderAssignStatus, int priority) {
+  public List<OrderAssignmentDTO> findNonActiveOrdersByOrderId(long orderId) {
+    return orderAssignmentRepository.findByOrderIdAndAssignedStatusNot(orderId, Status.ACCEPTED).stream()
+        .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());
+  }
+
+  public List<OrderAssignment> findTimeFlyOrders(OrderType orderType) {
+    LocalDateTime timeFlyTime = LocalDateTime.now().minusHours(Integer.valueOf(timeFlyPeriod));
+    return orderAssignmentRepository.findByAssignedStatusAndOrderTypeAndAssignedDateBefore(Status.PENDING, orderType, timeFlyTime);
+  }
+
+  public OrderAssignment findNextAssignment(long orderId, Status orderAssignStatus, int priority) {
     return orderAssignmentRepository.findByOrderIdAndAssignedStatusAndPriority(orderId, orderAssignStatus, priority);
   }
 
