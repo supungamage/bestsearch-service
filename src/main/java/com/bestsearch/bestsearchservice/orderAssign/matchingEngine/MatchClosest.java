@@ -66,7 +66,7 @@ public class MatchClosest implements IMatchBehaviour {
     orderAssignmentService.saveOrderAssignments(orderAssignments);
 
     // push 1st one to web socket queue
-    simpMessagingTemplate.convertAndSend("/topic/", List.of(
+    simpMessagingTemplate.convertAndSend("/topic/hello", List.of(
         orderAssignmentMapper.toOrderAssignmentDTO(orderAssignments.get(0))));
   }
 

@@ -62,7 +62,7 @@ public class MatchImmediate implements IMatchBehaviour{
       orderAssignmentService.saveOrderAssignments(orderAssignments);
 
       // push everything to web socket queue
-      simpMessagingTemplate.convertAndSend("/topic/"  , orderAssignments.stream().map(
+      simpMessagingTemplate.convertAndSend("/topic/hello"  , orderAssignments.stream().map(
           orderAssignmentMapper::toOrderAssignmentDTO
       ));
 
