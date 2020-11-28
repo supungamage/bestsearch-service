@@ -45,6 +45,7 @@ public class OrderAssignment extends Auditable<String> {
   @Enumerated(EnumType.ORDINAL)
   private OrderType orderType;
   private int priority;
+  private double radius;
 
   @JsonIgnore
   public OrderAssignmentDTO viewAsOrderAssignmentDTO() {

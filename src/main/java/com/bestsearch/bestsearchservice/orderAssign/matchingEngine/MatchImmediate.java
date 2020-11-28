@@ -11,10 +11,15 @@ import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+
+import javax.swing.text.html.parser.Entity;
 
 @Component
 public class MatchImmediate implements IMatchBehaviour{
@@ -83,6 +88,22 @@ public class MatchImmediate implements IMatchBehaviour{
 
   @Override
   public void match() {
+    List<OrderAssignment> timeFlyOrderAssignments = orderAssignmentService.findTimeFlyOrders(OrderType.IMMEDIATE);
+    if(Objects.isNull(timeFlyOrderAssignments)) {
+      return;
+    }
 
+    timeFlyOrderAssignments.forEach(oa -> {
+      oa.setAssignedStatus(Status.CANCELLED);
+    });
+    orderAssignmentService.saveOrderAssignments(timeFlyOrderAssignments);
+    // push everything to web socket queue
+    simpMessagingTemplate.convertAndSend("/topic/hello"  , timeFlyOrderAssignments.stream()
+            .map(orderAssignmentMapper::toOrderAssignmentDTO));
+
+    Map<Long, Double> orderIdVsDistance = timeFlyOrderAssignments.stream() //TODO: get distinct for better performance
+            .collect(Collectors.toMap(OrderAssignment::getOrderId, OrderAssignment::getRadius));
+
+    //TODO: search again, shd be PENDING
   }
 }
