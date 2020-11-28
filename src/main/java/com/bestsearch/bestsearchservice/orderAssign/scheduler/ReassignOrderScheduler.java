@@ -20,7 +20,8 @@ public class ReassignOrderScheduler {
     @Scheduled(fixedDelay = 60000)
     public void reassign() {
         log.info("starting the reassigning job...");
-
         new MatchingContext(matchingFactory.getMatch(OrderType.CLOSEST)).doMatch();
+        new MatchingContext(matchingFactory.getMatch(OrderType.IMMEDIATE)).doMatch();
+        log.info("completed the reassigning job...");
     }
 }

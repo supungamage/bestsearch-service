@@ -115,6 +115,9 @@ public class MatchClosest implements IMatchBehaviour {
   @Override
   public void match() {
     List<OrderAssignment> timeFlyOrderAssignments = orderAssignmentService.findTimeFlyOrders(OrderType.CLOSEST);
+    if(Objects.isNull(timeFlyOrderAssignments)) {
+      return;
+    }
 
     timeFlyOrderAssignments.forEach(timeFlyOrderAssignment -> {
       List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
