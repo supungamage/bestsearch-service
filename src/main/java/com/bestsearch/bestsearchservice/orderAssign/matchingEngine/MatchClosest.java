@@ -65,7 +65,7 @@ public class MatchClosest implements IMatchBehaviour {
             .orderType(OrderType.CLOSEST)
             .build()
     ).collect(
-        Collectors.toList());;
+        Collectors.toList());
 
     orderAssignmentService.saveOrderAssignments(orderAssignments);
 
@@ -76,40 +76,12 @@ public class MatchClosest implements IMatchBehaviour {
 
   @Override
   public void match(OrderAssignmentDTO orderAssignmentDTO) {
+    OrderAssignment orderAssignment = orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO);
     if(orderAssignmentDTO.getAssignedStatus() == Status.REJECTED){
-      // update order assignment status
-      orderAssignmentService.saveOrderAssignment(orderAssignmentDTO);
-
-      // Get next order assignment and send
-      List<OrderAssignmentDTO> orderAssignments = orderAssignmentService.findActiveOrdersByOrderId(orderAssignmentDTO.getOrderId());
-      simpMessagingTemplate.convertAndSend("/topic/hello", List.of(orderAssignments.get(0)));
-
-      // TODO: If all are rejected, increase the radius and query again
-
-
-    } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED){
-      // update order assignment status
-      orderAssignmentService.saveOrderAssignment(orderAssignmentDTO);
-
-      orderService.changeOrderStatusAndOrganization(
-          orderAssignmentDTO.getOrderId(),
-          orderAssignmentDTO.getAssignedStatus(),
-          orderAssignmentDTO.getOrganizationId());
-
-
-      List<OrderAssignmentDTO> orderAssignmentsToCancel = orderAssignmentService.findNonActiveOrdersByOrderId(orderAssignmentDTO.getOrderId());
-      List<OrderAssignment> cancelledOrderAssignments = orderAssignmentsToCancel.stream().map(oa -> {
-        oa.setAssignedStatus(Status.CANCELLED);
-        return oa;
-      }).map(orderAssignmentMapper::toOrderAssignment).collect(toList());
-
-      orderAssignmentService.saveOrderAssignments(cancelledOrderAssignments);
-
-
-
-
+      handleReject(orderAssignment);
+    } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED) {
+      handleAccept(orderAssignment);
     }
-
   }
 
   @Override
@@ -120,34 +92,56 @@ public class MatchClosest implements IMatchBehaviour {
     }
 
     timeFlyOrderAssignments.forEach(timeFlyOrderAssignment -> {
-      List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
-      List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
       timeFlyOrderAssignment.setAssignedStatus(Status.CANCELLED);
-      toBeSavedAssignments.add(timeFlyOrderAssignment);
-      toBeSentOrders.add(timeFlyOrderAssignment.viewAsOrderAssignmentDTO());
-      OrderAssignment nextAssignment = orderAssignmentService.findNextAssignment(timeFlyOrderAssignment.getOrderId(),
-          Status.INITIAL, timeFlyOrderAssignment.getPriority() + 1);
-
-      if(Objects.nonNull(nextAssignment)) {
-        nextAssignment.setAssignedStatus(Status.PENDING);
-        nextAssignment.setAssignedDate(LocalDateTime.now());
-        toBeSavedAssignments.add(nextAssignment);
-        toBeSentOrders.add(nextAssignment.viewAsOrderAssignmentDTO());
-      } else {
-        //TODO: search again, priority 1 shd be PENDING and other shd be INITIAL
-        List<OrderAssignment> newAssignments = new ArrayList<>();
-        if(Objects.nonNull(newAssignments)) {
-          toBeSavedAssignments.addAll(newAssignments);
-          toBeSentOrders.add(newAssignments.get(0).viewAsOrderAssignmentDTO());
-        } else {
-          //TODO: no pharmacies notify user
-        }
-      }
-
-      orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+      handleReject(timeFlyOrderAssignment);
     });
+  }
 
+  private void handleReject(OrderAssignment orderAssignment) {
+    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
+    List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
+    toBeSavedAssignments.add(orderAssignment);
+    toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
+    OrderAssignment nextAssignment = orderAssignmentService.findNextAssignment(orderAssignment.getOrderId(),
+            Status.INITIAL, orderAssignment.getPriority() + 1);
 
+    if(Objects.nonNull(nextAssignment)) {
+      nextAssignment.setAssignedStatus(Status.PENDING);
+      nextAssignment.setAssignedDate(LocalDateTime.now());
+      toBeSavedAssignments.add(nextAssignment);
+      toBeSentOrders.add(nextAssignment.viewAsOrderAssignmentDTO());
+    } else {
+      //TODO: search again, priority 1 shd be PENDING and other shd be INITIAL
+      List<OrderAssignment> newAssignments = new ArrayList<>();
+      if(Objects.nonNull(newAssignments)) {
+        toBeSavedAssignments.addAll(newAssignments);
+        toBeSentOrders.add(newAssignments.get(0).viewAsOrderAssignmentDTO());
+      } else {
+        //TODO: no pharmacies notify user
+      }
+    }
 
+    orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+    //TODO: send to be sent orders
+  }
+
+  private void handleAccept(OrderAssignment orderAssignment) {
+    List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
+    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
+
+    toBeSavedAssignments.add(orderAssignment);
+    toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
+
+    List<OrderAssignment> initialAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.INITIAL);
+    if (Objects.nonNull(initialAssignments)) {
+      initialAssignments.forEach(initialAssignment -> {
+        initialAssignment.setAssignedStatus(Status.CANCELLED);
+        toBeSavedAssignments.add(initialAssignment);
+        toBeSentOrders.add(initialAssignment.viewAsOrderAssignmentDTO());
+      });
+    }
+
+    orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+    //TODO: send to be sent orders
   }
 }

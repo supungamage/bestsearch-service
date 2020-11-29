@@ -73,16 +73,11 @@ public class MatchImmediate implements IMatchBehaviour{
 
   @Override
   public void match(OrderAssignmentDTO orderAssignmentDTO) {
+    OrderAssignment orderAssignment = orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO);
     if(orderAssignmentDTO.getAssignedStatus() == Status.REJECTED){
-      // update order assignment status
-      orderAssignmentService.saveOrderAssignment(orderAssignmentDTO);
+      handleReject(orderAssignment);
     } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED){
-      // update order assignment status
-      orderAssignmentService.saveOrderAssignment(orderAssignmentDTO);
-
-      // TODO: update order status and assign organization
-      // TODO: update order assign as CANCELLED
-      // TODO: Push cancelled status to other organizations - WS
+      handleAccept(orderAssignment);
     }
   }
 
@@ -103,7 +98,63 @@ public class MatchImmediate implements IMatchBehaviour{
 
     Map<Long, Double> orderIdVsDistance = timeFlyOrderAssignments.stream() //TODO: get distinct for better performance
             .collect(Collectors.toMap(OrderAssignment::getOrderId, OrderAssignment::getRadius));
+    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
+    List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
+    orderIdVsDistance.forEach((id, distance) -> {
+      //TODO: search again, shd be PENDING all
+      List<OrderAssignment> newAssignments = new ArrayList<>();
+      if(Objects.nonNull(newAssignments)) {
+        toBeSavedAssignments.addAll(newAssignments);
+        toBeSentOrders.addAll(newAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList()));
+      } else {
+        //TODO: no pharmacies notify user
+      }
 
-    //TODO: search again, shd be PENDING
+    });
+    orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+    //TODO: send to be sent orders
+  }
+
+  private void handleReject(OrderAssignment orderAssignment) {
+    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
+    List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
+    toBeSavedAssignments.add(orderAssignment);
+    toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
+
+    List<OrderAssignment> pendingAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
+
+    if(Objects.isNull(pendingAssignments) || pendingAssignments.size() < 1) {
+      //TODO: search again, shd be PENDING all
+      List<OrderAssignment> newAssignments = new ArrayList<>();
+      if(Objects.nonNull(newAssignments)) {
+        toBeSavedAssignments.addAll(newAssignments);
+        toBeSentOrders.addAll(newAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList()));
+      } else {
+        //TODO: no pharmacies notify user
+      }
+    }
+
+    orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+    //TODO: send to be sent orders
+  }
+
+  private void handleAccept(OrderAssignment orderAssignment) {
+    List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
+    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
+
+    toBeSavedAssignments.add(orderAssignment);
+    toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
+
+    List<OrderAssignment> pendingAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
+    if (Objects.nonNull(pendingAssignments)) {
+      pendingAssignments.forEach(pendingAssignment -> {
+        pendingAssignment.setAssignedStatus(Status.CANCELLED);
+        toBeSavedAssignments.add(pendingAssignment);
+        toBeSentOrders.add(pendingAssignment.viewAsOrderAssignmentDTO());
+      });
+    }
+
+    orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+    //TODO: send to be sent orders
   }
 }

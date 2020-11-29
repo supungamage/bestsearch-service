@@ -42,17 +42,7 @@ public class OrderAssignmentService {
 
   public List<OrderAssignmentDTO> findByOrderId(long orderId) {
     return orderAssignmentRepository.findByOrderId(orderId).stream()
-            .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());// TODO: not rejected
-  }
-
-  public List<OrderAssignmentDTO> findActiveOrdersByOrderId(long orderId) {
-    return orderAssignmentRepository.findByOrderIdAndAssignedStatusNot(orderId, Status.REJECTED).stream()
-        .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());
-  }
-
-  public List<OrderAssignmentDTO> findNonActiveOrdersByOrderId(long orderId) {
-    return orderAssignmentRepository.findByOrderIdAndAssignedStatusNot(orderId, Status.ACCEPTED).stream()
-        .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());
+            .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());
   }
 
   public List<OrderAssignment> findTimeFlyOrders(OrderType orderType) {
@@ -64,4 +54,7 @@ public class OrderAssignmentService {
     return orderAssignmentRepository.findByOrderIdAndAssignedStatusAndPriority(orderId, orderAssignStatus, priority);
   }
 
+  public List<OrderAssignment> findByOrderIdAndAssignedStatus(long orderId, Status assignedStatus) {
+    return orderAssignmentRepository.findByOrderIdAndAssignedStatus(orderId, assignedStatus);
+  }
 }
