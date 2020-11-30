@@ -11,16 +11,16 @@ import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.swing.text.html.parser.Entity;
 
+@Slf4j
 @Component
 public class MatchImmediate implements IMatchBehaviour{
 
@@ -45,22 +45,23 @@ public class MatchImmediate implements IMatchBehaviour{
 
   @Override
   public void match(OrderOutputDTO orderOutputDTO) {
-    System.out.println("Immediate...");
+    log.info("Immediate order:", orderOutputDTO.getOrderRef());
+    double radius = 10.0; // TODO: external variable
     List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getActiveOrganizationsWithinRadius(
-        10.0, // TODO: external variable
+            radius,
         orderOutputDTO.getLatitude(),
         orderOutputDTO.getLongitude());
 
-      List<OrderAssignment> orderAssignments = organizationOutputDTOs.stream().map(
-          org -> OrderAssignment.builder()
+      List<OrderAssignment> orderAssignments = organizationOutputDTOs.stream()
+              .map(org -> OrderAssignment.builder()
                   .orderId(orderOutputDTO.getId())
                   .organizationId(org.getId())
                   .assignedDate(LocalDateTime.now())
                   .assignedStatus(Status.PENDING)
                   .orderType(OrderType.IMMEDIATE)
-                  .build()
-      ).collect(
-          Collectors.toList());
+                  .priority(1)
+                  .radius(radius) //TODO: change when searching again
+                  .build()).collect(Collectors.toList());
 
       orderAssignmentService.saveOrderAssignments(orderAssignments);
 
@@ -72,13 +73,15 @@ public class MatchImmediate implements IMatchBehaviour{
   }
 
   @Override
-  public void match(OrderAssignmentDTO orderAssignmentDTO) {
+  public OrderAssignmentDTO match(OrderAssignmentDTO orderAssignmentDTO) {
     OrderAssignment orderAssignment = orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO);
     if(orderAssignmentDTO.getAssignedStatus() == Status.REJECTED){
       handleReject(orderAssignment);
     } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED){
       handleAccept(orderAssignment);
     }
+
+    return orderAssignmentDTO;
   }
 
   @Override
@@ -88,16 +91,16 @@ public class MatchImmediate implements IMatchBehaviour{
       return;
     }
 
+    Map<Long, Double> orderIdVsDistance = new HashMap<>();
     timeFlyOrderAssignments.forEach(oa -> {
       oa.setAssignedStatus(Status.CANCELLED);
+      orderIdVsDistance.put(oa.getOrderId(), oa.getRadius()); //all radius shd be same for given orderId
     });
-    orderAssignmentService.saveOrderAssignments(timeFlyOrderAssignments);
-    // push everything to web socket queue
-    simpMessagingTemplate.convertAndSend("/topic/hello"  , timeFlyOrderAssignments.stream()
-            .map(orderAssignmentMapper::toOrderAssignmentDTO));
 
-    Map<Long, Double> orderIdVsDistance = timeFlyOrderAssignments.stream() //TODO: get distinct for better performance
-            .collect(Collectors.toMap(OrderAssignment::getOrderId, OrderAssignment::getRadius));
+    orderAssignmentService.saveOrderAssignments(timeFlyOrderAssignments);
+    simpMessagingTemplate.convertAndSend("/topic/hello"
+            ,timeFlyOrderAssignments.stream().map(orderAssignmentMapper::toOrderAssignmentDTO));
+
     List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
     List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
     orderIdVsDistance.forEach((id, distance) -> {
@@ -112,7 +115,7 @@ public class MatchImmediate implements IMatchBehaviour{
 
     });
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    //TODO: send to be sent orders
+    simpMessagingTemplate.convertAndSend("/topic/hello" ,toBeSentOrders);
   }
 
   private void handleReject(OrderAssignment orderAssignment) {
@@ -135,7 +138,7 @@ public class MatchImmediate implements IMatchBehaviour{
     }
 
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    //TODO: send to be sent orders
+    simpMessagingTemplate.convertAndSend("/topic/hello" ,toBeSentOrders);
   }
 
   private void handleAccept(OrderAssignment orderAssignment) {
@@ -155,6 +158,6 @@ public class MatchImmediate implements IMatchBehaviour{
     }
 
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    //TODO: send to be sent orders
+    simpMessagingTemplate.convertAndSend("/topic/hello" ,toBeSentOrders);
   }
 }

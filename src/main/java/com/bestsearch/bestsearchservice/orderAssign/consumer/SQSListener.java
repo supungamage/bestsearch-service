@@ -29,7 +29,7 @@ public class SQSListener {
     this.matchingFactory = matchingFactory;
   }
 
-  @SqsListener(value = "${aws.sqs.bdeOutput}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+  @SqsListener(value = "${aws.sqs.order}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
   public void onMessage(OrderOutputDTO orderOutputDTO){
     log.info("New order received for matching engine", orderOutputDTO.getOrderRef());
     if(Objects.nonNull(orderOutputDTO) && Objects.nonNull(orderOutputDTO.getId())) {

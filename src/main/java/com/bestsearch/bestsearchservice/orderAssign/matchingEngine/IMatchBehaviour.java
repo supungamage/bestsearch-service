@@ -5,6 +5,6 @@ import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 
 public interface IMatchBehaviour {
   void match(OrderOutputDTO orderOutputDTO);
-  void match(OrderAssignmentDTO orderAssignmentDTO);
+  OrderAssignmentDTO match(OrderAssignmentDTO orderAssignmentDTO);
   void match();
 }

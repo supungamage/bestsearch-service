@@ -13,8 +13,8 @@ public class MatchPreferred implements IMatchBehaviour {
     }
 
     @Override
-    public void match(OrderAssignmentDTO orderAssignmentDTO) {
-
+    public OrderAssignmentDTO match(OrderAssignmentDTO orderAssignmentDTO) {
+        return orderAssignmentDTO;
     }
 
     @Override

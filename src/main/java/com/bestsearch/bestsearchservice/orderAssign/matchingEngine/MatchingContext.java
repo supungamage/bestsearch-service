@@ -15,8 +15,8 @@ public class MatchingContext {
     this.matchBehaviour.match(orderOutputDTO);
   }
 
-  public void doMatch(OrderAssignmentDTO orderAssignmentDTO){
-    this.matchBehaviour.match(orderAssignmentDTO);
+  public OrderAssignmentDTO doMatch(OrderAssignmentDTO orderAssignmentDTO){
+    return this.matchBehaviour.match(orderAssignmentDTO);
   }
 
   public void doMatch(){
