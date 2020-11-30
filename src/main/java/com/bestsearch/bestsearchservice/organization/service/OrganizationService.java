@@ -17,7 +17,7 @@ public interface OrganizationService {
 
     List<OrganizationOutputDTO> getActiveOrganizationsWithinRadius(double radius, double latitude, double longitude);
 
-    List<OrganizationOutputDTO> getOrderedActiveOrganizationsWithinRadius(double radius, double latitude, double longitude);
+    List<OrganizationOutputDTO> getOrderedActiveOrganizationsWithinRadius(double latitude, double longitude, int offset);
 
 
 }

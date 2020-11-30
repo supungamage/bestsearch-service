@@ -27,7 +27,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
         + "where active = true "
         + "ORDER BY "
         + "org.geom <-> ST_SetSRID(ST_Point(:longitude, :latitude),4326) "
-        + "LIMIT 10; "
+        + "LIMIT 10 offset :offset ; "
         , nativeQuery = true)
-    List<Organization> findOrderedActiveOrganizationsWithinRadius(  double latitude, double longitude);
+    List<Organization> findOrderedActiveOrganizationsWithinRadius( double latitude, double longitude, int offset);
 }

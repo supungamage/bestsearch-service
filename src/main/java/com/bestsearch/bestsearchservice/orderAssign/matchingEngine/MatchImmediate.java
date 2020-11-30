@@ -46,11 +46,11 @@ public class MatchImmediate implements IMatchBehaviour{
   @Override
   public void match(OrderOutputDTO orderOutputDTO) {
     log.info("Immediate order:", orderOutputDTO.getOrderRef());
-    double radius = 10.0; // TODO: external variable
-    List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getActiveOrganizationsWithinRadius(
-            radius,
+    int offset = 10; // TODO: external variable
+    List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getOrderedActiveOrganizationsWithinRadius(
         orderOutputDTO.getLatitude(),
-        orderOutputDTO.getLongitude());
+        orderOutputDTO.getLongitude(),
+        offset);
 
       List<OrderAssignment> orderAssignments = organizationOutputDTOs.stream()
               .map(org -> OrderAssignment.builder()
@@ -60,7 +60,7 @@ public class MatchImmediate implements IMatchBehaviour{
                   .assignedStatus(Status.PENDING)
                   .orderType(OrderType.IMMEDIATE)
                   .priority(1)
-                  .radius(radius) //TODO: change when searching again
+                  .offset(offset) //TODO: change when searching again
                   .build()).collect(Collectors.toList());
 
       orderAssignmentService.saveOrderAssignments(orderAssignments);
@@ -91,10 +91,10 @@ public class MatchImmediate implements IMatchBehaviour{
       return;
     }
 
-    Map<Long, Double> orderIdVsDistance = new HashMap<>();
+    Map<Long, Integer> orderIdVsDistance = new HashMap<>();
     timeFlyOrderAssignments.forEach(oa -> {
       oa.setAssignedStatus(Status.CANCELLED);
-      orderIdVsDistance.put(oa.getOrderId(), oa.getRadius()); //all radius shd be same for given orderId
+      orderIdVsDistance.put(oa.getOrderId(), oa.getOffset()); //all radius shd be same for given orderId
     });
 
     orderAssignmentService.saveOrderAssignments(timeFlyOrderAssignments);

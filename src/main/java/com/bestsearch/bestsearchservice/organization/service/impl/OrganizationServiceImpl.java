@@ -83,8 +83,8 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     @Override
-    public List<OrganizationOutputDTO> getOrderedActiveOrganizationsWithinRadius(double radius, double latitude, double longitude) {
-        return organizationRepository.findOrderedActiveOrganizationsWithinRadius(latitude,longitude)
+    public List<OrganizationOutputDTO> getOrderedActiveOrganizationsWithinRadius(double latitude, double longitude, int offset) {
+        return organizationRepository.findOrderedActiveOrganizationsWithinRadius(latitude,longitude, offset)
             .stream()
             .map(Organization::viewAsOrganizationOutputDTO)
             .collect(Collectors.toList());

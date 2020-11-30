@@ -53,11 +53,11 @@ public class MatchClosest implements IMatchBehaviour {
   @Override
   public void match(OrderOutputDTO orderOutputDTO) {
     log.info("Closest order:", orderOutputDTO.getOrderRef());
-    double radius = 10.0;
+    int offset  = 0;
     List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getOrderedActiveOrganizationsWithinRadius(
-            radius,
         orderOutputDTO.getLatitude(),
-        orderOutputDTO.getLongitude());
+        orderOutputDTO.getLongitude(),
+        offset);
 
     int index = 1;
     List<OrderAssignment> orderAssignments = new ArrayList<>();
@@ -69,7 +69,7 @@ public class MatchClosest implements IMatchBehaviour {
               .assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
               .orderType(OrderType.CLOSEST)
               .priority(index)
-              .radius(radius)
+              .offset(offset)
               .build());
       index++;
     }
