@@ -4,6 +4,7 @@ package com.bestsearch.bestsearchservice.orderAssign.matchingEngine;
 import static java.util.stream.Collectors.toList;
 
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
+import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.order.service.OrderService;
@@ -53,26 +54,11 @@ public class MatchClosest implements IMatchBehaviour {
   @Override
   public void match(OrderOutputDTO orderOutputDTO) {
     log.info("Closest order:", orderOutputDTO.getOrderRef());
-    int offset  = 0;
-    List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getOrderedActiveOrganizationsWithinRadius(
-        orderOutputDTO.getLatitude(),
-        orderOutputDTO.getLongitude(),
-        offset);
 
-    int index = 1;
-    List<OrderAssignment> orderAssignments = new ArrayList<>();
-    for(OrganizationOutputDTO org : organizationOutputDTOs) {
-      orderAssignments.add(OrderAssignment.builder()
-              .orderId(orderOutputDTO.getId())
-              .organizationId(org.getId())
-              .assignedDate(index == 1 ? LocalDateTime.now() : null)
-              .assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
-              .orderType(OrderType.CLOSEST)
-              .priority(index)
-              .offset(offset)
-              .build());
-      index++;
-    }
+    List<OrderAssignment> orderAssignments = getNewAssignments(
+        0, // initial offset
+        orderOutputDTO
+    );
 
     orderAssignmentService.saveOrderAssignments(orderAssignments);
 
@@ -122,9 +108,14 @@ public class MatchClosest implements IMatchBehaviour {
       toBeSavedAssignments.add(nextAssignment);
       toBeSentOrders.add(nextAssignment.viewAsOrderAssignmentDTO());
     } else {
-      //TODO: search again, priority 1 shd be PENDING and other shd be INITIAL
-      List<OrderAssignment> newAssignments = new ArrayList<>(); //searched results
-      if(Objects.nonNull(newAssignments)) {
+      OrderOutputDTO orderOutputDTO = orderService.getOrderById(orderAssignment.getOrderId());
+
+      List<OrderAssignment> newAssignments = getNewAssignments(
+          orderAssignment.getOffset(),
+          orderOutputDTO
+      );
+
+      if(!newAssignments.isEmpty()) {
         toBeSavedAssignments.addAll(newAssignments);
         toBeSentOrders.add(newAssignments.get(0).viewAsOrderAssignmentDTO());
       } else {
@@ -153,5 +144,29 @@ public class MatchClosest implements IMatchBehaviour {
 
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
     simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
+  }
+
+  private List<OrderAssignment> getNewAssignments(int currentOffset, OrderOutputDTO orderOutputDTO){
+    List<OrganizationOutputDTO> organizationOutputDTOs  = organizationService.getOrderedActiveOrganizationsWithinRadius(
+        orderOutputDTO.getLatitude(),
+        orderOutputDTO.getLongitude(),
+        currentOffset+1);
+
+    int index = 1;
+    List<OrderAssignment> newAssignments = new ArrayList<>();
+    for(OrganizationOutputDTO org : organizationOutputDTOs) {
+      newAssignments.add(OrderAssignment.builder()
+          .orderId(orderOutputDTO.getId())
+          .organizationId(org.getId())
+          .assignedDate(index == 1 ? LocalDateTime.now() : null)
+          .assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
+          .orderType(OrderType.CLOSEST)
+          .priority(index)
+          .offset(currentOffset+1)
+          .build());
+      index++;
+    }
+
+    return newAssignments;
   }
 }
