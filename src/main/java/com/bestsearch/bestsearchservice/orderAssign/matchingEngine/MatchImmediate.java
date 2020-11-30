@@ -3,6 +3,7 @@ package com.bestsearch.bestsearchservice.orderAssign.matchingEngine;
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
+import com.bestsearch.bestsearchservice.order.service.OrderService;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.mapper.OrderAssignmentMapper;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
@@ -33,35 +34,28 @@ public class MatchImmediate implements IMatchBehaviour{
 
   private final OrderAssignmentMapper orderAssignmentMapper;
 
+  private final OrderService orderService;
+
   public MatchImmediate(final OrganizationService organizationService,
                         final OrderAssignmentService orderAssignmentService,
                         final SimpMessagingTemplate simpMessagingTemplate,
-                        final OrderAssignmentMapper orderAssignmentMapper) {
+                        final OrderAssignmentMapper orderAssignmentMapper,
+                        final OrderService orderService) {
     this.organizationService = organizationService;
     this.orderAssignmentService = orderAssignmentService;
     this.simpMessagingTemplate = simpMessagingTemplate;
     this.orderAssignmentMapper = orderAssignmentMapper;
+    this.orderService = orderService;
   }
 
   @Override
   public void match(OrderOutputDTO orderOutputDTO) {
     log.info("Immediate order:", orderOutputDTO.getOrderRef());
-    int offset = 10; // TODO: external variable
-    List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getOrderedActiveOrganizationsWithinRadius(
-        orderOutputDTO.getLatitude(),
-        orderOutputDTO.getLongitude(),
-        offset);
 
-      List<OrderAssignment> orderAssignments = organizationOutputDTOs.stream()
-              .map(org -> OrderAssignment.builder()
-                  .orderId(orderOutputDTO.getId())
-                  .organizationId(org.getId())
-                  .assignedDate(LocalDateTime.now())
-                  .assignedStatus(Status.PENDING)
-                  .orderType(OrderType.IMMEDIATE)
-                  .priority(1)
-                  .offset(offset) //TODO: change when searching again
-                  .build()).collect(Collectors.toList());
+    List<OrderAssignment> orderAssignments = getNewAssignments(
+        0,
+        orderOutputDTO
+    );
 
       orderAssignmentService.saveOrderAssignments(orderAssignments);
 
@@ -127,9 +121,13 @@ public class MatchImmediate implements IMatchBehaviour{
     List<OrderAssignment> pendingAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
 
     if(Objects.isNull(pendingAssignments) || pendingAssignments.size() < 1) {
-      //TODO: search again, shd be PENDING all
-      List<OrderAssignment> newAssignments = new ArrayList<>();
-      if(Objects.nonNull(newAssignments)) {
+      OrderOutputDTO orderOutputDTO = orderService.getOrderById(orderAssignment.getOrderId());
+      List<OrderAssignment> newAssignments = getNewAssignments(
+          orderAssignment.getOffset()+1,
+          orderOutputDTO
+      );
+
+      if(!newAssignments.isEmpty()) {
         toBeSavedAssignments.addAll(newAssignments);
         toBeSentOrders.addAll(newAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList()));
       } else {
@@ -159,5 +157,24 @@ public class MatchImmediate implements IMatchBehaviour{
 
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
     simpMessagingTemplate.convertAndSend("/topic/hello" ,toBeSentOrders);
+  }
+
+
+  private List<OrderAssignment> getNewAssignments(int offset, OrderOutputDTO orderOutputDTO){
+    List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getOrderedActiveOrganizationsWithinRadius(
+        orderOutputDTO.getLatitude(),
+        orderOutputDTO.getLongitude(),
+        offset);
+
+    return organizationOutputDTOs.stream()
+        .map(org -> OrderAssignment.builder()
+            .orderId(orderOutputDTO.getId())
+            .organizationId(org.getId())
+            .assignedDate(LocalDateTime.now())
+            .assignedStatus(Status.PENDING)
+            .orderType(OrderType.IMMEDIATE)
+            .priority(1)
+            .offset(offset)
+            .build()).collect(Collectors.toList());
   }
 }

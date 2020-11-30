@@ -111,7 +111,7 @@ public class MatchClosest implements IMatchBehaviour {
       OrderOutputDTO orderOutputDTO = orderService.getOrderById(orderAssignment.getOrderId());
 
       List<OrderAssignment> newAssignments = getNewAssignments(
-          orderAssignment.getOffset(),
+          orderAssignment.getOffset()+1,
           orderOutputDTO
       );
 
@@ -146,11 +146,11 @@ public class MatchClosest implements IMatchBehaviour {
     simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
   }
 
-  private List<OrderAssignment> getNewAssignments(int currentOffset, OrderOutputDTO orderOutputDTO){
+  private List<OrderAssignment> getNewAssignments(int offset, OrderOutputDTO orderOutputDTO){
     List<OrganizationOutputDTO> organizationOutputDTOs  = organizationService.getOrderedActiveOrganizationsWithinRadius(
         orderOutputDTO.getLatitude(),
         orderOutputDTO.getLongitude(),
-        currentOffset+1);
+        offset);
 
     int index = 1;
     List<OrderAssignment> newAssignments = new ArrayList<>();
@@ -162,7 +162,7 @@ public class MatchClosest implements IMatchBehaviour {
           .assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
           .orderType(OrderType.CLOSEST)
           .priority(index)
-          .offset(currentOffset+1)
+          .offset(offset)
           .build());
       index++;
     }
