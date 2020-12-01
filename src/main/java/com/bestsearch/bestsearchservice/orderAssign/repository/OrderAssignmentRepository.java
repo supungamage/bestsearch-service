@@ -1,12 +1,14 @@
 package com.bestsearch.bestsearchservice.orderAssign.repository;
 
 
+import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -27,4 +29,16 @@ public interface OrderAssignmentRepository extends JpaRepository<OrderAssignment
   OrderAssignment findByOrderIdAndAssignedStatusAndPriority(long id, Status orderAssignStatus, int priority);
 
   List<OrderAssignment> findByAssignedStatusAndOrderTypeAndAssignedDateBefore(Status orderAssignStatus, OrderType orderType, LocalDateTime date);
+
+  @Query(value = "SELECT oa FROM OrderAssignment oa " +
+          "WHERE oa.organizationId = :organizationId " +
+          "and oa.assignedStatus <> :status " +
+          "ORDER BY oa.assignedAt")
+  Optional<List<OrderAssignment>> getCurrentAssignments(long organizationId, Status status);
+
+  @Query(value = "SELECT oa FROM OrderAssignment oa " +
+          "WHERE oa.organizationId = :organizationId " +
+          "and oa.assignedStatus in :statuses " +
+          "ORDER BY oa.assignedAt")
+  Optional<List<OrderAssignment>> getPastAssignments(long organizationId, List<Status> statuses);
 }

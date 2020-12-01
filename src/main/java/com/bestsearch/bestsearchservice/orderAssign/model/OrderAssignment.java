@@ -1,14 +1,11 @@
 package com.bestsearch.bestsearchservice.orderAssign.model;
 
-import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.share.audit.Auditable;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -39,7 +36,7 @@ public class OrderAssignment extends Auditable<String> {
   private Long id;
   private Long orderId;
   private Long organizationId;
-  private LocalDateTime assignedDate;
+  private LocalDateTime assignedAt;
   @Enumerated(EnumType.ORDINAL)
   private Status assignedStatus;
   @Enumerated(EnumType.ORDINAL)
@@ -50,7 +47,7 @@ public class OrderAssignment extends Auditable<String> {
   @JsonIgnore
   public OrderAssignmentDTO viewAsOrderAssignmentDTO() {
     return OrderAssignmentDTO.builder().id(id).orderId(orderId).organizationId(organizationId)
-            .assignedDate(assignedDate).assignedStatus(assignedStatus).orderType(orderType)
+            .assignedAt(assignedAt).assignedStatus(assignedStatus).orderType(orderType)
             .priority(priority)
             .build();
   }

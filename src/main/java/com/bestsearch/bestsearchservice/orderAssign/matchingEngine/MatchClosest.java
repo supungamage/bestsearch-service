@@ -104,7 +104,7 @@ public class MatchClosest implements IMatchBehaviour {
 
     if(Objects.nonNull(nextAssignment)) {
       nextAssignment.setAssignedStatus(Status.PENDING);
-      nextAssignment.setAssignedDate(LocalDateTime.now());
+      nextAssignment.setAssignedAt(LocalDateTime.now());
       toBeSavedAssignments.add(nextAssignment);
       toBeSentOrders.add(nextAssignment.viewAsOrderAssignmentDTO());
     } else {
@@ -158,7 +158,7 @@ public class MatchClosest implements IMatchBehaviour {
       newAssignments.add(OrderAssignment.builder()
           .orderId(orderOutputDTO.getId())
           .organizationId(org.getId())
-          .assignedDate(index == 1 ? LocalDateTime.now() : null)
+          .assignedAt(index == 1 ? LocalDateTime.now() : null)
           .assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
           .orderType(OrderType.CLOSEST)
           .priority(index)

@@ -1,6 +1,8 @@
 package com.bestsearch.bestsearchservice.orderAssign.service;
 
 
+import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
+import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
@@ -8,10 +10,13 @@ import com.bestsearch.bestsearchservice.orderAssign.mapper.OrderAssignmentMapper
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.orderAssign.repository.OrderAssignmentRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.bestsearch.bestsearchservice.share.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -56,5 +61,19 @@ public class OrderAssignmentService {
 
   public List<OrderAssignment> findByOrderIdAndAssignedStatus(long orderId, Status assignedStatus) {
     return orderAssignmentRepository.findByOrderIdAndAssignedStatus(orderId, assignedStatus);
+  }
+
+  public Map<LocalDate, List<OrderAssignmentDTO>> getCurrentAssignments(long organizationId) {
+    return orderAssignmentRepository.getCurrentAssignments(organizationId, Status.PENDING)
+            .orElseThrow(() -> new ResourceNotFoundException("No data found"))
+            .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
+            .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
+  }
+
+  public Map<LocalDate, List<OrderAssignmentDTO>> getPastAssignments(long organizationId) {
+    return orderAssignmentRepository.getPastAssignments(organizationId, List.of(Status.ACCEPTED, Status.REJECTED))
+            .orElseThrow(() -> new ResourceNotFoundException("No data found"))
+            .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
+            .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
   }
 }

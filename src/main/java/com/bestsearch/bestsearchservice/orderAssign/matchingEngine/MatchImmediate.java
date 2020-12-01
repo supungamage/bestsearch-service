@@ -170,7 +170,7 @@ public class MatchImmediate implements IMatchBehaviour{
         .map(org -> OrderAssignment.builder()
             .orderId(orderOutputDTO.getId())
             .organizationId(org.getId())
-            .assignedDate(LocalDateTime.now())
+            .assignedAt(LocalDateTime.now())
             .assignedStatus(Status.PENDING)
             .orderType(OrderType.IMMEDIATE)
             .priority(1)

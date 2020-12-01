@@ -1,26 +1,35 @@
 package com.bestsearch.bestsearchservice.orderAssign.controller;
 
+import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.matchingEngine.MatchingContext;
 import com.bestsearch.bestsearchservice.orderAssign.matchingEngine.MatchingFactory;
+import com.bestsearch.bestsearchservice.orderAssign.service.OrderAssignmentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Controller
+@RequestMapping("/api/v1/assignments")
 public class OrderAssignController {
 
   private final MatchingFactory matchingFactory;
 
-  public OrderAssignController(final MatchingFactory matchingFactory) {
+  private final OrderAssignmentService orderAssignmentService;
+
+  public OrderAssignController(final MatchingFactory matchingFactory,
+                               final OrderAssignmentService orderAssignmentService) {
     this.matchingFactory = matchingFactory;
+    this.orderAssignmentService = orderAssignmentService;
   }
 
   @MessageMapping("/update")
@@ -35,5 +44,15 @@ public class OrderAssignController {
           @PathVariable("id") long id,
           @RequestBody OrderAssignmentDTO orderAssignmentDTO) {
     return ResponseEntity.ok(new MatchingContext(matchingFactory.getMatch(orderAssignmentDTO.getOrderType())).doMatch(orderAssignmentDTO));
+  }
+
+  @GetMapping("/current")
+  public ResponseEntity<Map<LocalDate, List<OrderAssignmentDTO>>> getCurrentAssignments(@RequestParam long organizationId) {
+    return ResponseEntity.ok(this.orderAssignmentService.getCurrentAssignments(organizationId));
+  }
+
+  @GetMapping("/past")
+  public ResponseEntity<Map<LocalDate, List<OrderAssignmentDTO>>> getPastAssignments(@RequestParam long organizationId) {
+    return ResponseEntity.ok(this.orderAssignmentService.getCurrentAssignments(organizationId));
   }
 }
