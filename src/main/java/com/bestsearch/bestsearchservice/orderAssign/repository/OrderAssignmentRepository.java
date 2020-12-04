@@ -28,7 +28,7 @@ public interface OrderAssignmentRepository extends JpaRepository<OrderAssignment
 
   OrderAssignment findByOrderIdAndAssignedStatusAndPriority(long id, Status orderAssignStatus, int priority);
 
-  List<OrderAssignment> findByAssignedStatusAndOrderTypeAndAssignedDateBefore(Status orderAssignStatus, OrderType orderType, LocalDateTime date);
+  List<OrderAssignment> findByAssignedStatusAndOrderTypeAndAssignedAtBefore(Status orderAssignStatus, OrderType orderType, LocalDateTime date);
 
   @Query(value = "SELECT oa FROM OrderAssignment oa " +
           "WHERE oa.organizationId = :organizationId " +
