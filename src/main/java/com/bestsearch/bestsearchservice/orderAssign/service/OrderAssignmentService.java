@@ -52,7 +52,7 @@ public class OrderAssignmentService {
 
   public List<OrderAssignment> findTimeFlyOrders(OrderType orderType) {
     LocalDateTime timeFlyTime = LocalDateTime.now().minusHours(Integer.valueOf(timeFlyPeriod));
-    return orderAssignmentRepository.findByAssignedStatusAndOrderTypeAndAssignedDateBefore(Status.PENDING, orderType, timeFlyTime);
+    return orderAssignmentRepository.findByAssignedStatusAndOrderTypeAndAssignedAtBefore(Status.PENDING, orderType, timeFlyTime);
   }
 
   public OrderAssignment findNextAssignment(long orderId, Status orderAssignStatus, int priority) {

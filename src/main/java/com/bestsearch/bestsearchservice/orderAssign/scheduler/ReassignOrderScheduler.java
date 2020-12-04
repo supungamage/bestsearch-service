@@ -17,7 +17,7 @@ public class ReassignOrderScheduler {
         this.matchingFactory = matchingFactory;
     }
 
-    @Scheduled(fixedDelay = 60000)
+    //@Scheduled(fixedDelay = 60000)
     public void reassign() {
         log.info("starting the reassigning job...");
         new MatchingContext(matchingFactory.getMatch(OrderType.CLOSEST)).doMatch();
