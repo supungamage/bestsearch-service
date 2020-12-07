@@ -1,8 +1,13 @@
 package com.bestsearch.bestsearchservice.organization.controller;
 
+import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
+import com.bestsearch.bestsearchservice.order.model.enums.Status;
+import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationInputDTO;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +47,26 @@ public class OrganizationController {
 
 	@GetMapping("/hello")
 	public String sayHello(){
+		List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getOrderedActiveOrganizationsWithinRadius(61.21759217, -149.8935557,0);
+
+
+		int index = 1;
+		List<OrderAssignment> newAssignments = new ArrayList<>();
+		for(OrganizationOutputDTO org : organizationOutputDTOs) {
+			newAssignments.add(OrderAssignment.builder()
+					.orderId(1l)
+					.organizationId(org.getId())
+					.assignedAt(index == 1 ? LocalDateTime.now() : null)
+					.assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
+					.orderType(OrderType.CLOSEST)
+					.priority(index)
+					.offset(0)
+					.build());
+			index++;
+		}
+
+		System.out.println("Dummy endpoint");
+		newAssignments.forEach(System.out::println);
 		return "Hello...";
 	}
 }

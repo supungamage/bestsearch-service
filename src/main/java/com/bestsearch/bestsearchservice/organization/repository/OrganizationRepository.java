@@ -22,7 +22,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
         , nativeQuery = true)
     List<Organization> findActiveOrganizationsWithinRadius( double radius, double latitude, double longitude);
 
-    @Query(value = "SELECT *, ST_Distance(geom,ST_SetSRID(ST_Point(:longitude, :latitude),4326)) AS distance "
+    @Query(value = "SELECT * "
         + "FROM organization org "
         + "where active = true "
         + "ORDER BY "
