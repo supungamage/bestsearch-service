@@ -3,6 +3,8 @@ package com.bestsearch.bestsearchservice.organization.model;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 import com.bestsearch.bestsearchservice.share.audit.Auditable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,6 +14,8 @@ import lombok.experimental.SuperBuilder;
 import javax.persistence.*;
 
 import org.locationtech.jts.geom.Point;
+import org.n52.jackson.datatype.jts.GeometryDeserializer;
+import org.n52.jackson.datatype.jts.GeometrySerializer;
 
 @Entity
 @Table(name = "organization")
@@ -50,6 +54,8 @@ public class Organization extends Auditable<String> {
 
 	private String address;
 
+	@JsonSerialize(using = GeometrySerializer.class)
+	@JsonDeserialize(contentUsing = GeometryDeserializer.class)
 	@Column(name = "geom", columnDefinition = "Geometry")
 	public Point point;
 
