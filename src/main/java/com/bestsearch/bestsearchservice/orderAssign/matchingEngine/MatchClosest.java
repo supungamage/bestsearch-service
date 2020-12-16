@@ -111,7 +111,7 @@ public class MatchClosest implements IMatchBehaviour {
       OrderOutputDTO orderOutputDTO = orderService.getOrderById(orderAssignment.getOrderId());
 
       List<OrderAssignment> newAssignments = getNewAssignments(
-          orderAssignment.getOffset()+1,
+          orderAssignment.getOffsetPaginate() + 1,
           orderOutputDTO
       );
 
@@ -162,7 +162,7 @@ public class MatchClosest implements IMatchBehaviour {
           .assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
           .orderType(OrderType.CLOSEST)
           .priority(index)
-          .offset(offset)
+          .offsetPaginate(offset)
           .build());
       index++;
     }

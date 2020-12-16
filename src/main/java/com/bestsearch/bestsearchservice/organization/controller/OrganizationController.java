@@ -60,7 +60,7 @@ public class OrganizationController {
 					.assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
 					.orderType(OrderType.CLOSEST)
 					.priority(index)
-					.offset(0)
+					.offsetPaginate(0)
 					.build());
 			index++;
 		}

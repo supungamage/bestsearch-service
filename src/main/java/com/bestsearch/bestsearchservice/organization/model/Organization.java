@@ -17,12 +17,14 @@ import org.locationtech.jts.geom.Point;
 import org.n52.jackson.datatype.jts.GeometryDeserializer;
 import org.n52.jackson.datatype.jts.GeometrySerializer;
 
+import java.io.Serializable;
+
 @Entity
 @Table(name = "organization")
 @Getter
 @SuperBuilder
 @NoArgsConstructor
-public class Organization extends Auditable<String> {
+public class Organization extends Auditable<String> implements Serializable {
 
 //	private static final long serialVersionUID = 1L;
 	
@@ -34,9 +36,8 @@ public class Organization extends Auditable<String> {
 	@NonNull
 	private String name;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "organizationType")
-	@JsonIgnore
+	@ManyToOne //(fetch = FetchType.LAZY)
+	@JoinColumn(name = "organization_type")
 	private OrganizationType organizationType;
 	
 	private String province;
@@ -54,10 +55,10 @@ public class Organization extends Auditable<String> {
 
 	private String address;
 
-	@JsonSerialize(using = GeometrySerializer.class)
-	@JsonDeserialize(contentUsing = GeometryDeserializer.class)
-	@Column(name = "geom", columnDefinition = "Geometry")
-	public Point point;
+	//@JsonSerialize(using = GeometrySerializer.class)
+	//@JsonDeserialize(contentUsing = GeometryDeserializer.class)
+	//@Column(name = "geom", columnDefinition = "Geometry")
+	//public Point point;
 
 	@JsonIgnore
 	public OrganizationOutputDTO viewAsOrganizationOutputDTO() {

@@ -42,7 +42,7 @@ public class OrderAssignment extends Auditable<String> {
   @Enumerated(EnumType.ORDINAL)
   private OrderType orderType;
   private int priority;
-  private int offset;
+  private int offsetPaginate;
 
   @JsonIgnore
   public OrderAssignmentDTO viewAsOrderAssignmentDTO() {

@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
             .antMatchers("/swagger-ui.html")
             .antMatchers("/swagger-resources/**")
             .antMatchers("/v2/api-docs/**")
+            .antMatchers("/configuration/ui")
+            .antMatchers("/configuration/**")
             .antMatchers("/webjars/**")
             .antMatchers("/api/v1/orders/**")
             .antMatchers("/api/v1/organizations/**")

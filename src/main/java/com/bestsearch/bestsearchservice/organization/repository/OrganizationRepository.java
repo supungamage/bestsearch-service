@@ -22,7 +22,8 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
         , nativeQuery = true)
     List<Organization> findActiveOrganizationsWithinRadius( double radius, double latitude, double longitude);
 
-    @Query(value = "SELECT * "
+    @Query(value = "SELECT id, name, organization_type, province, district, city, longitude, latitude, "
+        + "created_at, modified_at, created_by, modified_by, address, active "
         + "FROM organization org "
         + "where active = true "
         + "ORDER BY "
