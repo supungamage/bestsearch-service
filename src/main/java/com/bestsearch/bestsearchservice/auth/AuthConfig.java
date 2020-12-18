@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
             .antMatchers("/api/v1/orders/**")
             .antMatchers("/api/v1/organizations/**")
             .antMatchers("/api/v1/organization-types/**")
+            .antMatchers("/api/v1/assignments/**")
             .antMatchers("/actuator/**")
             .antMatchers("/handler/**")
             .antMatchers("/ws/**");

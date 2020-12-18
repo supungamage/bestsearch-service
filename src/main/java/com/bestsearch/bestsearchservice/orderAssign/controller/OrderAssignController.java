@@ -53,6 +53,6 @@ public class OrderAssignController {
 
   @GetMapping("/past")
   public ResponseEntity<Map<LocalDate, List<OrderAssignmentDTO>>> getPastAssignments(@RequestParam long organizationId) {
-    return ResponseEntity.ok(this.orderAssignmentService.getCurrentAssignments(organizationId));
+    return ResponseEntity.ok(this.orderAssignmentService.getPastAssignments(organizationId));
   }
 }

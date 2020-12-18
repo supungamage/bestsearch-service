@@ -32,7 +32,7 @@ public interface OrderAssignmentRepository extends JpaRepository<OrderAssignment
 
   @Query(value = "SELECT oa FROM OrderAssignment oa " +
           "WHERE oa.organizationId = :organizationId " +
-          "and oa.assignedStatus <> :status " +
+          "and oa.assignedStatus = :status " +
           "ORDER BY oa.assignedAt")
   Optional<List<OrderAssignment>> getCurrentAssignments(long organizationId, Status status);
 
