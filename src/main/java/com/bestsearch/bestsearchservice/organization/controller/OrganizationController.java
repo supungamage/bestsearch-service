@@ -32,7 +32,7 @@ public class OrganizationController {
 	@GetMapping("/{id}")
 	public ResponseEntity<OrganizationOutputDTO> getOrganizationById(@PathVariable("id") long id) {
 		return ResponseEntity.ok(this.organizationService.getOrganizationById(id));
-	} 
+	}
 	
 	@PostMapping
 	public ResponseEntity<OrganizationOutputDTO> addOrganization(@RequestBody OrganizationInputDTO organizationInputDTO) {
@@ -43,6 +43,11 @@ public class OrganizationController {
 	public ResponseEntity<OrganizationOutputDTO> updateOrganizationById(@PathVariable("id") long id,
 			@RequestBody OrganizationInputDTO organizationInputDTO) {
 		return ResponseEntity.ok(this.organizationService.updateOrganization(id, organizationInputDTO));
+	}
+
+	@GetMapping
+	public ResponseEntity<List<OrganizationOutputDTO>> getOrganizations() {
+		return ResponseEntity.ok(this.organizationService.getOrganizations());
 	}
 
 	@GetMapping("/hello")

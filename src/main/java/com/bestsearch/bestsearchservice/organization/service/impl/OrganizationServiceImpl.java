@@ -89,4 +89,12 @@ public class OrganizationServiceImpl implements OrganizationService {
             .map(Organization::viewAsOrganizationOutputDTO)
             .collect(Collectors.toList());
     }
+
+    @Override
+    public List<OrganizationOutputDTO> getOrganizations() {
+        return organizationRepository.findAll()
+            .stream()
+            .map(Organization::viewAsOrganizationOutputDTO)
+            .collect(Collectors.toList());
+    }
 }
