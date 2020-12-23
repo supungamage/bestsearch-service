@@ -3,6 +3,7 @@ package com.bestsearch.bestsearchservice.organization.service;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationInputDTO;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 
+import com.bestsearch.bestsearchservice.organization.dto.OrganizationsListOutputDTO;
 import java.util.List;
 
 public interface OrganizationService {
@@ -19,7 +20,7 @@ public interface OrganizationService {
 
     List<OrganizationOutputDTO> getOrderedActiveOrganizationsWithinRadius(double latitude, double longitude, int offset);
 
-    List<OrganizationOutputDTO> getOrganizations();
+    List<OrganizationsListOutputDTO> getOrganizations();
 
 
 }

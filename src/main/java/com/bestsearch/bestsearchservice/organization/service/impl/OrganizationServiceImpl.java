@@ -2,6 +2,7 @@ package com.bestsearch.bestsearchservice.organization.service.impl;
 
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationInputDTO;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
+import com.bestsearch.bestsearchservice.organization.dto.OrganizationsListOutputDTO;
 import com.bestsearch.bestsearchservice.organization.model.Organization;
 import com.bestsearch.bestsearchservice.organization.model.OrganizationType;
 import com.bestsearch.bestsearchservice.organization.repository.OrganizationRepository;
@@ -91,10 +92,10 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     @Override
-    public List<OrganizationOutputDTO> getOrganizations() {
+    public List<OrganizationsListOutputDTO> getOrganizations() {
         return organizationRepository.findAll()
             .stream()
-            .map(Organization::viewAsOrganizationOutputDTO)
+            .map(Organization::viewAsOrganizationsListOutputDTO)
             .collect(Collectors.toList());
     }
 }

@@ -5,6 +5,7 @@ import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationInputDTO;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
+import com.bestsearch.bestsearchservice.organization.dto.OrganizationsListOutputDTO;
 import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public class OrganizationController {
 	}
 
 	@GetMapping
-	public ResponseEntity<List<OrganizationOutputDTO>> getOrganizations() {
+	public ResponseEntity<List<OrganizationsListOutputDTO>> getOrganizations() {
 		return ResponseEntity.ok(this.organizationService.getOrganizations());
 	}
 
