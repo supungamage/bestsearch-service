@@ -27,15 +27,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "WHERE o.organizationTypeId = :organizationTypeId " +
             "and o.userId = :userId " +
             "and o.status <> :status " +
-            "ORDER BY o.orderedAt")
+            "ORDER BY o.orderedAt desc ")
     Optional<List<Order>> getCurrentOrders(long organizationTypeId, long userId, Status status);
 
     @Query(value = "SELECT o FROM Order o " +
             "WHERE o.organizationTypeId = :organizationTypeId " +
             "and o.userId = :userId " +
             "and o.status = :status " +
-            "ORDER BY o.orderedAt")
+            "ORDER BY o.orderedAt desc ")
     Optional<List<Order>> getPastOrders(long organizationTypeId, long userId, Status status);
-
 
 }

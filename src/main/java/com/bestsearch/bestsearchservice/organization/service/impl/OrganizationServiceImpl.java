@@ -59,6 +59,14 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     @Override
+    public List<OrganizationOutputDTO> getOrganizationByIds(List<Long> ids) {
+        return organizationRepository.findAllById(ids)
+                .stream()
+                .map(Organization::viewAsOrganizationOutputDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public OrganizationOutputDTO updateOrganization(long id, OrganizationInputDTO organizationInputDTO) {
         OrganizationType organizationType = organizationTypeRepository.findById(organizationInputDTO.getOrganizationTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("No organization type configured"));

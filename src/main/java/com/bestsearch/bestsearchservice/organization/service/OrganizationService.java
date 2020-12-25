@@ -22,5 +22,5 @@ public interface OrganizationService {
 
     List<OrganizationsListOutputDTO> getOrganizations();
 
-
+    List<OrganizationOutputDTO> getOrganizationByIds(List<Long> ids);
 }

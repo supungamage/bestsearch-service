@@ -1,9 +1,8 @@
 package com.bestsearch.bestsearchservice.order.controller;
 
-import com.bestsearch.bestsearchservice.order.dto.OrderCreateDTO;
-import com.bestsearch.bestsearchservice.order.dto.OrderInputDTO;
-import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
+import com.bestsearch.bestsearchservice.order.dto.*;
 import com.bestsearch.bestsearchservice.order.service.OrderService;
+import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,15 +49,17 @@ public class OrderController {
         return ResponseEntity.ok(this.orderService.getOrderByRef(orderRef, organizationTypeId));
     }
 
+    @JsonView(OrderOutputViews.Public.class)
     @GetMapping("/current")
-    public ResponseEntity<Map<LocalDate, List<OrderOutputDTO>>> getCurrentOrders(
+    public ResponseEntity<List<OrderAndPeriodDTO>> getCurrentOrders(
             @RequestParam long orgTypeId,
             @RequestParam long userId) {
         return ResponseEntity.ok(this.orderService.getCurrentOrders(orgTypeId, userId));
     }
 
+    @JsonView(OrderOutputViews.Public.class)
     @GetMapping("/past")
-    public ResponseEntity<Map<LocalDate, List<OrderOutputDTO>>> getPastOrders(
+    public ResponseEntity<List<OrderAndPeriodDTO>> getPastOrders(
             @RequestParam long orgTypeId,
             @RequestParam long userId) {
         return ResponseEntity.ok(this.orderService.getPastOrders(orgTypeId, userId));

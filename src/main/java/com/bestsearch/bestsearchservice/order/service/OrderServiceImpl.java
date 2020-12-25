@@ -1,13 +1,14 @@
 package com.bestsearch.bestsearchservice.order.service;
 
-import com.bestsearch.bestsearchservice.order.dto.OrderCreateDTO;
-import com.bestsearch.bestsearchservice.order.dto.OrderInputDTO;
-import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
+import com.bestsearch.bestsearchservice.order.dto.*;
 import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.order.producer.SQSProducer;
 import com.bestsearch.bestsearchservice.order.repository.OrderRepository;
 import com.bestsearch.bestsearchservice.order.utils.IdentifierGenerator;
+import com.bestsearch.bestsearchservice.order.utils.OrderDateFormatter;
+import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
+import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
 import com.bestsearch.bestsearchservice.share.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,14 +36,18 @@ public class OrderServiceImpl implements OrderService {
 
     private final String orderSqsName;
 
+    private final OrganizationService organizationService;
+
     public OrderServiceImpl(final OrderRepository orderRepository,
                             final SQSProducer sqsProducer,
                             final @Value("${order.ref.pattern}") String orderRefPattern,
-                            final @Value("${aws.sqs.order}") String orderSqsName) {
+                            final @Value("${aws.sqs.order}") String orderSqsName,
+                            final OrganizationService organizationService) {
         this.orderRepository = orderRepository;
         this.orderRefPattern = orderRefPattern;
         this.sqsProducer = sqsProducer;
         this.orderSqsName = orderSqsName;
+        this.organizationService = organizationService;
     }
 
     @Override
@@ -116,19 +123,52 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Map<LocalDate, List<OrderOutputDTO>> getCurrentOrders(long orgTypeId, long userId) {
-        return orderRepository.getCurrentOrders(orgTypeId, userId, Status.CLOSED)
+    public List<OrderAndPeriodDTO> getCurrentOrders(long orgTypeId, long userId) {
+        List<OrderOutputDTO> orderOutputDTOS = orderRepository.getCurrentOrders(orgTypeId, userId, Status.CLOSED)
                 .orElseThrow(() -> new ResourceNotFoundException("No data found"))
                 .stream().map(Order::viewAsOrderOutputDTO)
-                .collect(Collectors.groupingBy(OrderOutputDTO::getOrderDate));
+                .collect(Collectors.toList());
+
+        return getOrderAndPeriodDTOS(orderOutputDTOS);
     }
 
     @Override
-    public Map<LocalDate, List<OrderOutputDTO>> getPastOrders(long orgTypeId, long userId) {
-        return orderRepository.getPastOrders(orgTypeId, userId, Status.CLOSED)
+    public List<OrderAndPeriodDTO> getPastOrders(long orgTypeId, long userId) {
+        List<OrderOutputDTO> orderOutputDTOS = orderRepository.getPastOrders(orgTypeId, userId, Status.CLOSED)
                 .orElseThrow(() -> new ResourceNotFoundException("No data found"))
                 .stream().map(Order::viewAsOrderOutputDTO)
-                .collect(Collectors.groupingBy(OrderOutputDTO::getOrderDate));
+                .collect(Collectors.toList());
+
+        return getOrderAndPeriodDTOS(orderOutputDTOS);
+    }
+
+    private List<OrderAndPeriodDTO> getOrderAndPeriodDTOS(List<OrderOutputDTO> orderOutputDTOS) {
+        List<Long> organizationIds = orderOutputDTOS.stream()
+                .map(OrderOutputDTO::getOrganizationId)
+                .filter((id) -> Objects.nonNull(id) && id > 0)
+                .collect(Collectors.toList());
+
+        if(Objects.nonNull(organizationIds) && !organizationIds.isEmpty()) {
+            Map<Long, OrganizationOutputDTO> organizationOutputDTOS = organizationService.getOrganizationByIds(organizationIds).stream()
+                    .collect(Collectors.toMap(OrganizationOutputDTO::getId, Function.identity()));
+
+            orderOutputDTOS.forEach((orderOutputDTO) -> {
+                OrganizationOutputDTO matchedOrganization = organizationOutputDTOS.get(orderOutputDTO.getOrganizationId());
+                if(Objects.nonNull(matchedOrganization)) {
+                    orderOutputDTO.setOrganizationDTO(OrganizationDTO.builder()
+                            .id(matchedOrganization.getId())
+                            .name(matchedOrganization.getName())
+                            .address(matchedOrganization.getAddress())
+                            .latitude(matchedOrganization.getLatitude())
+                            .longitude(matchedOrganization.getLongitude()).build());
+                }
+            });
+        }
+
+        return orderOutputDTOS.stream().collect(Collectors.groupingBy(OrderOutputDTO::getOrderDate))
+                .entrySet().stream()
+                .map(o -> new OrderAndPeriodDTO(OrderDateFormatter.formatForUI(o.getKey()), o.getValue()))
+                .collect(Collectors.toList());
     }
 
     private void pushToSqs(OrderOutputDTO data) {

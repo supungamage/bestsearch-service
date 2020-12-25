@@ -1,5 +1,6 @@
 package com.bestsearch.bestsearchservice.order.service;
 
+import com.bestsearch.bestsearchservice.order.dto.OrderAndPeriodDTO;
 import com.bestsearch.bestsearchservice.order.dto.OrderCreateDTO;
 import com.bestsearch.bestsearchservice.order.dto.OrderInputDTO;
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
@@ -18,6 +19,6 @@ public interface OrderService {
     void changeOrderStatusAndOrganization(long id, Status toStatus,long organizationId );
     OrderOutputDTO updateOrder(long id, OrderInputDTO orderInputDTO);
     List<OrderOutputDTO> getOrders();
-    Map<LocalDate, List<OrderOutputDTO>> getCurrentOrders(long orgTypeId, long userId);
-    Map<LocalDate, List<OrderOutputDTO>> getPastOrders(long orgTypeId, long userId);
+    List<OrderAndPeriodDTO> getCurrentOrders(long orgTypeId, long userId);
+    List<OrderAndPeriodDTO> getPastOrders(long orgTypeId, long userId);
 }
