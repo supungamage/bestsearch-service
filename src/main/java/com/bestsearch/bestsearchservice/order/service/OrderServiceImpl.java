@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -165,8 +166,10 @@ public class OrderServiceImpl implements OrderService {
             });
         }
 
-        return orderOutputDTOS.stream().collect(Collectors.groupingBy(OrderOutputDTO::getOrderDate))
+        return orderOutputDTOS.stream()
+                .collect(Collectors.groupingBy(OrderOutputDTO::getOrderDate))
                 .entrySet().stream()
+                .sorted(Map.Entry.<LocalDate, List<OrderOutputDTO>>comparingByKey(Comparator.reverseOrder()))
                 .map(o -> new OrderAndPeriodDTO(OrderDateFormatter.formatForUI(o.getKey()), o.getValue()))
                 .collect(Collectors.toList());
     }
