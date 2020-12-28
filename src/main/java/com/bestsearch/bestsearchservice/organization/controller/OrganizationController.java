@@ -26,7 +26,7 @@ public class OrganizationController {
 	}
 
 	@GetMapping("/type")
-	public ResponseEntity<List<OrganizationOutputDTO>> getAllOrganizationsByType(@RequestParam ("typeId") long typeId) {
+	public ResponseEntity<List<OrganizationsListOutputDTO>> getAllOrganizationsByType(@RequestParam ("typeId") long typeId) {
 		return ResponseEntity.ok(this.organizationService.getActiveOrganizationsByType(typeId));
 	} 
 	
@@ -46,10 +46,10 @@ public class OrganizationController {
 		return ResponseEntity.ok(this.organizationService.updateOrganization(id, organizationInputDTO));
 	}
 
-	@GetMapping
-	public ResponseEntity<List<OrganizationsListOutputDTO>> getOrganizations() {
-		return ResponseEntity.ok(this.organizationService.getOrganizations());
-	}
+//	@GetMapping("/type/{typeId}")
+//	public ResponseEntity<List<OrganizationsListOutputDTO>> getOrganizations(@PathVariable("type") int typeId) {
+//		return ResponseEntity.ok(this.organizationService.getOrganizations());
+//	}
 
 	@GetMapping("/hello")
 	public String sayHello(){

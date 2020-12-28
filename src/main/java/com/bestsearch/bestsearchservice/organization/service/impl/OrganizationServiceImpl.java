@@ -44,11 +44,11 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     @Override
-    public List<OrganizationOutputDTO> getActiveOrganizationsByType(long organizationTypeId) {
+    public List<OrganizationsListOutputDTO> getActiveOrganizationsByType(long organizationTypeId) {
         return organizationRepository.findActiveOrganizationByType(organizationTypeId, true)
                 .orElseThrow(() -> new ResourceNotFoundException("No organization available for given type"))
                 .stream()
-                .map(Organization::viewAsOrganizationOutputDTO)
+                .map(Organization::viewAsOrganizationsListOutputDTO)
                 .collect(Collectors.toList());
     }
 
@@ -99,11 +99,11 @@ public class OrganizationServiceImpl implements OrganizationService {
             .collect(Collectors.toList());
     }
 
-    @Override
-    public List<OrganizationsListOutputDTO> getOrganizations() {
-        return organizationRepository.findAll()
-            .stream()
-            .map(Organization::viewAsOrganizationsListOutputDTO)
-            .collect(Collectors.toList());
-    }
+//    @Override
+//    public List<OrganizationsListOutputDTO> getOrganizationsByType(long type) {
+//        return organizationRepository.findByOrganizationType(type)
+//            .stream()
+//            .map(Organization::viewAsOrganizationsListOutputDTO)
+//            .collect(Collectors.toList());
+//    }
 }

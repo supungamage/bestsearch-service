@@ -10,7 +10,7 @@ public interface OrganizationService {
 
     OrganizationOutputDTO addOrganization(OrganizationInputDTO organizationInputDTO);
 
-    List<OrganizationOutputDTO> getActiveOrganizationsByType(long organizationTypeId);
+    List<OrganizationsListOutputDTO> getActiveOrganizationsByType(long organizationTypeId);
 
     OrganizationOutputDTO getOrganizationById(long id);
 
@@ -19,8 +19,6 @@ public interface OrganizationService {
     List<OrganizationOutputDTO> getActiveOrganizationsWithinRadius(double radius, double latitude, double longitude);
 
     List<OrganizationOutputDTO> getOrderedActiveOrganizationsWithinRadius(double latitude, double longitude, int offset);
-
-    List<OrganizationsListOutputDTO> getOrganizations();
 
     List<OrganizationOutputDTO> getOrganizationByIds(List<Long> ids);
 }

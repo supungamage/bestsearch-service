@@ -1,7 +1,17 @@
 package com.bestsearch.bestsearchservice.order.controller;
 
 import com.bestsearch.bestsearchservice.order.dto.*;
+import com.bestsearch.bestsearchservice.order.dto.OrderCreateDTO;
+import com.bestsearch.bestsearchservice.order.dto.OrderInputDTO;
+import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
+import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
+import com.bestsearch.bestsearchservice.order.service.AmazonClientService;
 import com.bestsearch.bestsearchservice.order.service.OrderService;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -16,8 +28,11 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    public OrderController(final OrderService orderService) {
+    private final AmazonClientService amazonClientService;
+
+    public OrderController(final OrderService orderService, final AmazonClientService amazonClientService) {
         this.orderService = orderService;
+        this.amazonClientService = amazonClientService;
     }
 
     @PostMapping
@@ -63,6 +78,52 @@ public class OrderController {
             @RequestParam long orgTypeId,
             @RequestParam long userId) {
         return ResponseEntity.ok(this.orderService.getPastOrders(orgTypeId, userId));
+    }
+
+    @PostMapping("/uploadFile")
+    public UploadFileResponse uploadFile(@RequestParam("file") MultipartFile file) {
+//        String fileName = fileStorageService.storeFile(file);
+
+//        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+//            .path("/downloadFile/")
+//            .path(fileName)
+//            .toUriString();
+
+//        return new UploadFileResponse(fileName, fileDownloadUri,file.getContentType(), file.getSize());
+        return null;
+    }
+
+    @RequestMapping(value = "/add", method = RequestMethod.POST,  consumes = { MediaType.MULTIPART_FORM_DATA_VALUE }, produces = { MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity<OrderOutputDTO> addOrder(
+            @RequestParam("userId") Long userId,
+            @RequestParam("orderType") OrderType orderType,
+            @RequestParam("organizationTypeId") Long organizationTypeId,
+            @RequestParam("longitude") Double longitude,
+            @RequestParam("latitude") Double latitude,
+            @RequestParam("organizationId") Long organizationId,
+            @RequestParam("files") MultipartFile files[]) {
+
+//        return Arrays.asList(files)
+//            .stream()
+//            .map(this::uploadFile)
+//            .collect(Collectors.toList());
+
+        List<String> images = new ArrayList<String>();
+
+
+        for (MultipartFile multipartFile : files) {
+            images.add(this.amazonClientService.uploadFile(multipartFile));
+        }
+
+        return ResponseEntity.ok(this.orderService.saveOrder(OrderCreateDTO.builder()
+            .userId(userId)
+            .orderType(orderType)
+            .organizationTypeId(organizationTypeId)
+            .longitude(longitude)
+            .latitude(latitude)
+            .organizationId(organizationId)
+            .images(images)
+            .build()));
     }
 
 }
