@@ -5,6 +5,7 @@ import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.share.audit.Auditable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -44,6 +45,9 @@ public class Order extends Auditable<String> {
 
     private LocalDateTime orderedAt;
 
+    @ElementCollection
+    private List<String> images;
+
     @JsonIgnore
     public OrderOutputDTO viewAsOrderOutputDTO() {
         return OrderOutputDTO.builder().id(id).orderRef(orderRef).userId(userId).orderType(orderType)
@@ -54,6 +58,7 @@ public class Order extends Auditable<String> {
                 .period(ChronoUnit.HOURS.between(orderedAt, LocalDateTime.now()) < 24
                         ? ChronoUnit.HOURS.between(orderedAt, LocalDateTime.now())
                         : -1)
+                .images(images)
                 .build();
     }
 }

@@ -4,6 +4,7 @@ import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -54,6 +55,9 @@ public class OrderOutputDTO {
 
     @JsonView(OrderOutputViews.Public.class)
     private long period;
+
+    @JsonView(OrderOutputViews.Public.class)
+    private List<String> images;
 
     @JsonIgnore
     public LocalDate getOrderDate() {

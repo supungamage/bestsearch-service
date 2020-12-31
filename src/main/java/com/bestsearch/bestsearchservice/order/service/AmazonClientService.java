@@ -11,6 +11,7 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Date;
 import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,9 +51,10 @@ public class AmazonClientService {
             File file = convertMultiPartToFile(multipartFile);
             String fileName = generateFileName(multipartFile);
             // fileUrl = endpointUrl + "/" + bucketName + "/" + fileName;
-            fileUrl = endpointUrl + "/"  + fileName;
+            String path = LocalDate.now() + "/" + fileName;
+            fileUrl = endpointUrl + "/" + path;
 
-            uploadFileTos3bucket(fileName, file);
+            uploadFileTos3bucket(path, file);
             file.delete();
         } catch (Exception e) {
            e.printStackTrace();
