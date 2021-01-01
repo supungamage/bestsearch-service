@@ -70,6 +70,7 @@ public class OrderServiceImpl implements OrderService {
                 .organizationTypeId(orderCreateDTO.getOrganizationTypeId())
                 .userId(orderCreateDTO.getUserId())
                 .orderedAt(LocalDateTime.now())
+                .images(orderCreateDTO.getImages())
                 .userComment(orderCreateDTO.getUserComment())
                 .build();
 
