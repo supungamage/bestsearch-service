@@ -55,6 +55,9 @@ public class OrderOutputDTO {
     @JsonView(OrderOutputViews.Public.class)
     private long period;
 
+    @JsonView(OrderOutputViews.Public.class)
+    private String userComment;
+
     @JsonIgnore
     public LocalDate getOrderDate() {
         return orderedAt.toLocalDate();

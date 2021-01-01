@@ -21,4 +21,5 @@ public class OrderInputDTO {
     private Double longitude;
     private Double latitude;
     private long organizationId;
+    private String userComment;
 }

@@ -70,6 +70,7 @@ public class OrderServiceImpl implements OrderService {
                 .organizationTypeId(orderCreateDTO.getOrganizationTypeId())
                 .userId(orderCreateDTO.getUserId())
                 .orderedAt(LocalDateTime.now())
+                .userComment(orderCreateDTO.getUserComment())
                 .build();
 
         OrderOutputDTO savedOeder = orderRepository.save(toBeSaved).viewAsOrderOutputDTO();
@@ -114,6 +115,7 @@ public class OrderServiceImpl implements OrderService {
                 .organizationId(orderInputDTO.getOrganizationId())
                 .organizationTypeId(orderInputDTO.getOrganizationTypeId())
                 .userId(orderInputDTO.getUserId())
+                .userComment(orderInputDTO.getUserComment())
                 .build()).viewAsOrderOutputDTO();
     }
 

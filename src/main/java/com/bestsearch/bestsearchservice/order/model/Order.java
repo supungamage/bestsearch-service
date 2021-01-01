@@ -44,6 +44,8 @@ public class Order extends Auditable<String> {
 
     private LocalDateTime orderedAt;
 
+    private String userComment;
+
     @JsonIgnore
     public OrderOutputDTO viewAsOrderOutputDTO() {
         return OrderOutputDTO.builder().id(id).orderRef(orderRef).userId(userId).orderType(orderType)
@@ -54,6 +56,7 @@ public class Order extends Auditable<String> {
                 .period(ChronoUnit.HOURS.between(orderedAt, LocalDateTime.now()) < 24
                         ? ChronoUnit.HOURS.between(orderedAt, LocalDateTime.now())
                         : -1)
+                .userComment(userComment)
                 .build();
     }
 }
