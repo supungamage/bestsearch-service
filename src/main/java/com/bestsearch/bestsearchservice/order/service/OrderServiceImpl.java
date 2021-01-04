@@ -3,7 +3,7 @@ package com.bestsearch.bestsearchservice.order.service;
 import com.bestsearch.bestsearchservice.order.dto.*;
 import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
-import com.bestsearch.bestsearchservice.order.producer.SQSProducer;
+import com.bestsearch.bestsearchservice.order.producer.OrderAssignmentProducer;
 import com.bestsearch.bestsearchservice.order.repository.OrderRepository;
 import com.bestsearch.bestsearchservice.order.utils.IdentifierGenerator;
 import com.bestsearch.bestsearchservice.order.utils.OrderDateFormatter;
@@ -33,20 +33,20 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
 
-    private final SQSProducer sqsProducer;
+    private final OrderAssignmentProducer producer;
 
     private final String orderSqsName;
 
     private final OrganizationService organizationService;
 
     public OrderServiceImpl(final OrderRepository orderRepository,
-                            final SQSProducer sqsProducer,
+                            final OrderAssignmentProducer producer,
                             final @Value("${order.ref.pattern}") String orderRefPattern,
                             final @Value("${aws.sqs.order}") String orderSqsName,
                             final OrganizationService organizationService) {
         this.orderRepository = orderRepository;
         this.orderRefPattern = orderRefPattern;
-        this.sqsProducer = sqsProducer;
+        this.producer = producer;
         this.orderSqsName = orderSqsName;
         this.organizationService = organizationService;
     }
@@ -75,7 +75,7 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         OrderOutputDTO savedOeder = orderRepository.save(toBeSaved).viewAsOrderOutputDTO();
-        pushToSqs(savedOeder);
+        producer.send(savedOeder);
 
         return savedOeder;
     }
@@ -176,8 +176,5 @@ public class OrderServiceImpl implements OrderService {
                 .map(o -> new OrderAndPeriodDTO(OrderDateFormatter.formatForUI(o.getKey()), o.getValue()))
                 .collect(Collectors.toList());
     }
-
-    private void pushToSqs(OrderOutputDTO data) {
-        sqsProducer.produce(orderSqsName, data);
-    }
+    
 }

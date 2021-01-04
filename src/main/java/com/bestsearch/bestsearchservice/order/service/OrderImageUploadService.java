@@ -19,31 +19,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
-public class AmazonClientService {
+public class OrderImageUploadService {
 	
-	private AmazonS3 s3client;
+	private final AmazonS3 amazonS3;
 
-    @Value("${amazonProperties.endpointUrl}")
     private String endpointUrl;
-    
-    @Value("${amazonProperties.bucketName}")
-    private String bucketName;
-    
-    @Value("${amazonProperties.accessKey}")
-    private String accessKey;
-    
-    @Value("${amazonProperties.secretKey}")
-    private String secretKey;
-    
-    @PostConstruct
-    private void initializeAmazon() {
-    	BasicAWSCredentials creds = new BasicAWSCredentials(this.accessKey, this.secretKey);
 
-        this.s3client = AmazonS3ClientBuilder
-          .standard().withCredentials(new AWSStaticCredentialsProvider(creds)).withRegion("us-east-1").build();
+    private String bucketName;
+
+    public OrderImageUploadService(final AmazonS3 amazonS3,
+                                   final @Value("${amazonProperties.endpointUrl}") String endpointUrl,
+                                   final @Value("${amazonProperties.bucketName}") String bucketName) {
+        this.amazonS3 = amazonS3;
+        this.endpointUrl = endpointUrl;
+        this.bucketName = bucketName;
     }
-    
-    
+
     public String uploadFile(MultipartFile multipartFile) {
 
         String fileUrl = "";
@@ -75,11 +66,11 @@ public class AmazonClientService {
     }
     
     private void uploadFileTos3bucket(String fileName, File file) {
-        s3client.putObject(new PutObjectRequest(bucketName, fileName, file)
+        amazonS3.putObject(new PutObjectRequest(bucketName, fileName, file)
                 .withCannedAcl(CannedAccessControlList.PublicRead));
     }
     
     public void deleteFileFroms3bucket(String fileUrl) {
-    	s3client.deleteObject(new DeleteObjectRequest(bucketName, fileUrl.substring(fileUrl.lastIndexOf("/") + 1)));
+        amazonS3.deleteObject(new DeleteObjectRequest(bucketName, fileUrl.substring(fileUrl.lastIndexOf("/") + 1)));
     }
 }

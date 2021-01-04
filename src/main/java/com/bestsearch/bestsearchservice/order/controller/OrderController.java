@@ -5,22 +5,18 @@ import com.bestsearch.bestsearchservice.order.dto.OrderCreateDTO;
 import com.bestsearch.bestsearchservice.order.dto.OrderInputDTO;
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
-import com.bestsearch.bestsearchservice.order.service.AmazonClientService;
+import com.bestsearch.bestsearchservice.order.service.OrderImageUploadService;
 import com.bestsearch.bestsearchservice.order.service.OrderService;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.http.MediaType;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
+
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -28,11 +24,11 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    private final AmazonClientService amazonClientService;
+    private final OrderImageUploadService uploadService;
 
-    public OrderController(final OrderService orderService, final AmazonClientService amazonClientService) {
+    public OrderController(final OrderService orderService, final OrderImageUploadService uploadService) {
         this.orderService = orderService;
-        this.amazonClientService = amazonClientService;
+        this.uploadService = uploadService;
     }
 
     @PostMapping
@@ -112,7 +108,7 @@ public class OrderController {
 
 
         for (MultipartFile multipartFile : files) {
-            images.add(this.amazonClientService.uploadFile(multipartFile));
+            images.add(this.uploadService.uploadFile(multipartFile));
         }
 
         return ResponseEntity.ok(this.orderService.saveOrder(OrderCreateDTO.builder()
