@@ -2,6 +2,7 @@ package com.bestsearch.bestsearchservice.order.service;
 
 import com.bestsearch.bestsearchservice.order.dto.*;
 import com.bestsearch.bestsearchservice.order.model.Order;
+import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.order.producer.OrderAssignmentProducer;
 import com.bestsearch.bestsearchservice.order.repository.OrderRepository;
@@ -66,7 +67,7 @@ public class OrderServiceImpl implements OrderService {
                 .orderRef(orderRef)
                 .status(Status.INITIAL)
                 .orderType(orderCreateDTO.getOrderType())
-                .organizationId(orderCreateDTO.getOrganizationId())
+                .organizationId(orderCreateDTO.getOrderType() == OrderType.PREFERRED ? orderCreateDTO.getOrganizationId() : 0)
                 .organizationTypeId(orderCreateDTO.getOrganizationTypeId())
                 .userId(orderCreateDTO.getUserId())
                 .orderedAt(LocalDateTime.now())
