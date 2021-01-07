@@ -71,7 +71,7 @@ public class OrderAssignmentService {
   }
 
   public Map<LocalDate, List<OrderAssignmentDTO>> getPastAssignments(long organizationId) {
-    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.REJECTED, Status.COMPLETED))
+    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.REJECTED, Status.COMPLETED, Status.NO_RESPONSE))
             .orElseThrow(() -> new ResourceNotFoundException("No data found"))
             .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
             .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
