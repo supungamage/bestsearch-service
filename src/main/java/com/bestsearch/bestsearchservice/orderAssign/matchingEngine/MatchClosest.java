@@ -44,10 +44,11 @@ public class MatchClosest implements IMatchBehaviour {
 
 
   public MatchClosest(final OrganizationService organizationService,
-                      final OrderAssignmentService orderAssignmentService,
-                      final SimpMessagingTemplate simpMessagingTemplate,
-                      final OrderAssignmentMapper orderAssignmentMapper,
-                      final OrderService orderService) {
+      final OrderAssignmentService orderAssignmentService,
+      final SimpMessagingTemplate simpMessagingTemplate,
+      final OrderAssignmentMapper orderAssignmentMapper,
+      final OrderService orderService,
+      final OrderProducer orderProducer) {
     this.organizationService = organizationService;
     this.orderAssignmentService = orderAssignmentService;
     this.simpMessagingTemplate = simpMessagingTemplate;
@@ -102,10 +103,12 @@ public class MatchClosest implements IMatchBehaviour {
     List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
     List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
     toBeSavedAssignments.add(orderAssignment);
-    if(orderAssignment.getAssignedStatus() == Status.NO_RESPONSE) { //for time fly orders notify via web socket
+    if (orderAssignment.getAssignedStatus()
+        == Status.NO_RESPONSE) { //for time fly orders notify via web socket
       toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
     }
-    OrderAssignment nextAssignment = orderAssignmentService.findNextAssignment(orderAssignment.getOrderId(),
+    OrderAssignment nextAssignment = orderAssignmentService
+        .findNextAssignment(orderAssignment.getOrderId(),
             Status.SEARCHING, orderAssignment.getPriority() + 1);
 
     if (Objects.nonNull(nextAssignment)) {
@@ -139,7 +142,8 @@ public class MatchClosest implements IMatchBehaviour {
 
     toBeSavedAssignments.add(orderAssignment);
 
-    List<OrderAssignment> initialAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.INITIAL);
+    List<OrderAssignment> initialAssignments = orderAssignmentService
+        .findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.INITIAL);
     if (Objects.nonNull(initialAssignments)) {
       initialAssignments.forEach(initialAssignment -> {
         initialAssignment.setAssignedStatus(Status.CANCELLED_BY_SYSTEM);
