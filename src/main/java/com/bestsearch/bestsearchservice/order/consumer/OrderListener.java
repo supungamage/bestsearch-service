@@ -25,7 +25,7 @@ public class OrderListener {
     this.orderService = orderService;
   }
 
-  @SqsListener(value = "${aws.sqs.order}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+  @SqsListener(value = "${aws.sqs.order.assign}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
   public void onMessage(String message) throws JsonProcessingException {
     OrderAssignmentDTO orderAssignmentDTO = objectmapper
         .readValue(message, OrderAssignmentDTO.class);
