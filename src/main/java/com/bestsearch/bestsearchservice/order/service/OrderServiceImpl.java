@@ -75,10 +75,10 @@ public class OrderServiceImpl implements OrderService {
                 .userComment(orderCreateDTO.getUserComment())
                 .build();
 
-        OrderOutputDTO savedOeder = orderRepository.save(toBeSaved).viewAsOrderOutputDTO();
-        producer.send(savedOeder);
+        OrderOutputDTO savedOrder = orderRepository.save(toBeSaved).viewAsOrderOutputDTO();
+        producer.send(savedOrder);
 
-        return savedOeder;
+        return savedOrder;
     }
 
     @Override
