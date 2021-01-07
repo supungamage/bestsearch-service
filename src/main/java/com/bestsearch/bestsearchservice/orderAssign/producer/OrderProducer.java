@@ -19,7 +19,7 @@ public class OrderProducer {
   private final ObjectMapper objectmapper;
 
   public OrderProducer(final AmazonSQS amazonSQS, final ObjectMapper objectmapper,
-      final @Value("${aws.sqs.order}") String queue) {
+      final @Value("${aws.sqs.order.assign}") String queue) {
     this.amazonSQS = amazonSQS;
     this.objectmapper = objectmapper;
     this.queue = queue;
