@@ -4,6 +4,7 @@ import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.matchingEngine.MatchingContext;
 import com.bestsearch.bestsearchservice.orderAssign.matchingEngine.MatchingFactory;
+import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.orderAssign.service.OrderAssignmentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,32 +28,39 @@ public class OrderAssignController {
   private final OrderAssignmentService orderAssignmentService;
 
   public OrderAssignController(final MatchingFactory matchingFactory,
-                               final OrderAssignmentService orderAssignmentService) {
+      final OrderAssignmentService orderAssignmentService) {
     this.matchingFactory = matchingFactory;
     this.orderAssignmentService = orderAssignmentService;
   }
 
   @MessageMapping("/update")
   public void handlePrivateMessaging(@Payload OrderAssignmentDTO orderAssignmentDTO,
-                                     @DestinationVariable("channelId") String channelId) {
-    log.info("Private message handling "+ orderAssignmentDTO.getAssignedStatus() + " " + channelId);
-    new MatchingContext(matchingFactory.getMatch(orderAssignmentDTO.getOrderType())).doMatch(orderAssignmentDTO);
+      @DestinationVariable("channelId") String channelId) {
+    log.info(
+        "Private message handling " + orderAssignmentDTO.getAssignedStatus() + " " + channelId);
+    new MatchingContext(matchingFactory.getMatch(orderAssignmentDTO.getOrderType()))
+        .doMatch(orderAssignmentDTO);
   }
 
   @PutMapping("/{id}")
   public ResponseEntity<OrderAssignmentDTO> updateOrderAssignment(
-          @PathVariable("id") long id,
-          @RequestBody OrderAssignmentDTO orderAssignmentDTO) {
-    return ResponseEntity.ok(new MatchingContext(matchingFactory.getMatch(orderAssignmentDTO.getOrderType())).doMatch(orderAssignmentDTO));
+      @PathVariable("id") long id,
+      @RequestBody OrderAssignmentDTO orderAssignmentDTO) {
+    return ResponseEntity
+        .ok(new MatchingContext(matchingFactory.getMatch(orderAssignmentDTO.getOrderType()))
+            .doMatch(orderAssignmentDTO));
   }
 
   @GetMapping("/current")
-  public ResponseEntity<Map<LocalDate, List<OrderAssignmentDTO>>> getCurrentAssignments(@RequestParam long organizationId) {
+  public ResponseEntity<Map<LocalDate, List<OrderAssignmentDTO>>> getCurrentAssignments(
+      @RequestParam long organizationId) {
     return ResponseEntity.ok(this.orderAssignmentService.getCurrentAssignments(organizationId));
   }
 
   @GetMapping("/past")
-  public ResponseEntity<Map<LocalDate, List<OrderAssignmentDTO>>> getPastAssignments(@RequestParam long organizationId) {
+  public ResponseEntity<Map<LocalDate, List<OrderAssignmentDTO>>> getPastAssignments(
+      @RequestParam long organizationId) {
     return ResponseEntity.ok(this.orderAssignmentService.getPastAssignments(organizationId));
   }
+
 }
