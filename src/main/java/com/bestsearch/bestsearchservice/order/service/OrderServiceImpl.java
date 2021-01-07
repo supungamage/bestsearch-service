@@ -17,10 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -86,6 +83,12 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findById(id)
                 .map(Order::viewAsOrderOutputDTO)
                 .orElseThrow(() -> new ResourceNotFoundException("No order found"));
+    }
+
+    @Override
+    public List<OrderOutputDTO> getOrdersById(Set<Long> ids) {
+        return orderRepository.findAllById(ids).stream()
+                .map(Order::viewAsOrderOutputDTO).collect(Collectors.toList());
     }
 
     @Override

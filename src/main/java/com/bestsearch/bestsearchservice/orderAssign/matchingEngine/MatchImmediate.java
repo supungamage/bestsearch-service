@@ -86,44 +86,45 @@ public class MatchImmediate implements IMatchBehaviour {
 
   @Override
   public void match() {
-    List<OrderAssignment> timeFlyOrderAssignments = orderAssignmentService
-        .findTimeFlyOrders(OrderType.IMMEDIATE);
+    List<OrderAssignment> timeFlyOrderAssignments = orderAssignmentService.findTimeFlyOrders(OrderType.IMMEDIATE);
     if (Objects.isNull(timeFlyOrderAssignments)) {
       return;
     }
 
-    Map<Long, Integer> orderIdVsDistance = new HashMap<>();
-    timeFlyOrderAssignments.forEach(oa -> {
-      oa.setAssignedStatus(Status.CANCELLED);
-      orderIdVsDistance.put(oa.getOrderId(), oa.getOffsetPaginate()); //all radius shd be same for given orderId
-    });
+    if(Objects.nonNull(timeFlyOrderAssignments) && timeFlyOrderAssignments.size() > 0) {
+      Map<Long, Integer> orderIdVsOffset = new HashMap<>();
+      timeFlyOrderAssignments.forEach(oa -> {
+        oa.setAssignedStatus(Status.NO_RESPONSE);
+        orderIdVsOffset.put(oa.getOrderId(), oa.getOffsetPaginate()); //all radius shd be same for given orderId
+      });
 
-    orderAssignmentService.saveOrderAssignments(timeFlyOrderAssignments);
-    simpMessagingTemplate.convertAndSend("/topic/hello"
-            ,timeFlyOrderAssignments.stream().map(orderAssignmentMapper::toOrderAssignmentDTO));
+      orderAssignmentService.saveOrderAssignments(timeFlyOrderAssignments);
+      simpMessagingTemplate.convertAndSend("/topic/hello"
+              , timeFlyOrderAssignments.stream().map(orderAssignmentMapper::toOrderAssignmentDTO));
 
-    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
-    List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
-    orderIdVsDistance.forEach((id, distance) -> {
-      //TODO: search again, shd be PENDING all
-      List<OrderAssignment> newAssignments = new ArrayList<>();
-      if(Objects.nonNull(newAssignments)) {
-        toBeSavedAssignments.addAll(newAssignments);
-        toBeSentOrders.addAll(newAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList()));
-      } else {
-        //TODO: no pharmacies notify user
-      }
+      List<OrderOutputDTO> orderOutputDTOs = orderService.getOrdersById(orderIdVsOffset.keySet());
 
-    });
-    orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
+      List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
+      List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
+
+      orderOutputDTOs.forEach(orderOutputDTO -> {
+        List<OrderAssignment> newAssignments = getNewAssignments(orderIdVsOffset.get(orderOutputDTO.getId()), orderOutputDTO);
+        if(Objects.nonNull(newAssignments)) {
+          toBeSavedAssignments.addAll(newAssignments);
+          toBeSentOrders.addAll(newAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList()));
+        } else {
+          //TODO: no pharmacies notify user
+        }
+      });
+
+      orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+      simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
+    }
   }
 
   private void handleReject(OrderAssignment orderAssignment) {
-    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
     List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
     toBeSavedAssignments.add(orderAssignment);
-    toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
 
     List<OrderAssignment> pendingAssignments = orderAssignmentService
         .findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
@@ -137,40 +138,40 @@ public class MatchImmediate implements IMatchBehaviour {
 
       if(!newAssignments.isEmpty()) {
         toBeSavedAssignments.addAll(newAssignments);
-        toBeSentOrders.addAll(newAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList()));
+        simpMessagingTemplate.convertAndSend("/topic/hello", newAssignments.stream()
+                .map(OrderAssignment::viewAsOrderAssignmentDTO)
+                .collect(Collectors.toList()));
       } else {
         //TODO: no pharmacies notify user
       }
     }
 
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
   }
 
   private void handleAccept(OrderAssignment orderAssignment) {
-    List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
-    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
-
-    toBeSavedAssignments.add(orderAssignment);
-    toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
-
     List<OrderAssignment> pendingAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
     if (Objects.nonNull(pendingAssignments)) {
+      List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
+      List<OrderAssignmentDTO> toBeSentAssignments = new ArrayList<>();
+
       pendingAssignments.forEach(pendingAssignment -> {
-        pendingAssignment.setAssignedStatus(Status.CANCELLED);
+        if(orderAssignment.getId() != pendingAssignment.getId()) {
+          pendingAssignment.setAssignedStatus(Status.ACCEPTED);
+        } else {
+          pendingAssignment.setAssignedStatus(Status.CANCELLED_BY_SYSTEM);
+          toBeSentAssignments.add(pendingAssignment.viewAsOrderAssignmentDTO());
+        }
+
         toBeSavedAssignments.add(pendingAssignment);
-        toBeSentOrders.add(pendingAssignment.viewAsOrderAssignmentDTO());
       });
+
+      orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+      simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentAssignments);
+
     }
 
-    orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-
     orderProducer.send(orderAssignment.viewAsOrderAssignmentDTO());
-
-    simpMessagingTemplate
-        .convertAndSend("/topic/hello", toBeSentOrders); // TODO: Include accepted order
-
-
   }
 
 

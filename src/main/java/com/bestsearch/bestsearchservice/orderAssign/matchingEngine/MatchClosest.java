@@ -100,24 +100,22 @@ public class MatchClosest implements IMatchBehaviour {
   }
 
   private void handleReject(OrderAssignment orderAssignment) {
-    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
+    List<OrderAssignmentDTO> toBeSentAssignments = new ArrayList<>();
     List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
     toBeSavedAssignments.add(orderAssignment);
-    if (orderAssignment.getAssignedStatus()
-        == Status.NO_RESPONSE) { //for time fly orders notify via web socket
-      toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
+    if (orderAssignment.getAssignedStatus() == Status.NO_RESPONSE) { //for time fly orders notify via web socket
+      toBeSentAssignments.add(orderAssignment.viewAsOrderAssignmentDTO());
     }
     OrderAssignment nextAssignment = orderAssignmentService
-        .findNextAssignment(orderAssignment.getOrderId(),
-            Status.SEARCHING, orderAssignment.getPriority() + 1);
+        .findNextAssignment(orderAssignment.getOrderId(), Status.INITIAL, orderAssignment.getPriority() + 1);
 
     if (Objects.nonNull(nextAssignment)) {
       nextAssignment.setAssignedStatus(Status.PENDING);
       nextAssignment.setAssignedAt(LocalDateTime.now());
       toBeSavedAssignments.add(nextAssignment);
-      toBeSentOrders.add(nextAssignment.viewAsOrderAssignmentDTO());
+      toBeSentAssignments.add(nextAssignment.viewAsOrderAssignmentDTO());
     } else {
-      OrderOutputDTO orderOutputDTO = orderService.getOrderById(orderAssignment.getOrderId());
+      OrderOutputDTO orderOutputDTO = orderService.getOrderById(orderAssignment.getOrderId()); //when separate into services consider keep location with assignments rather than service call to order.
 
       List<OrderAssignment> newAssignments = getNewAssignments(
           orderAssignment.getOffsetPaginate() + 1,
@@ -126,34 +124,36 @@ public class MatchClosest implements IMatchBehaviour {
 
       if (!newAssignments.isEmpty()) {
         toBeSavedAssignments.addAll(newAssignments);
-        toBeSentOrders.add(newAssignments.get(0).viewAsOrderAssignmentDTO());
+        toBeSentAssignments.add(newAssignments.get(0).viewAsOrderAssignmentDTO());
       } else {
         //TODO: no pharmacies notify user
       }
     }
 
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
+    simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentAssignments);
   }
 
   private void handleAccept(OrderAssignment orderAssignment) {
-    List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
-    List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
-
-    toBeSavedAssignments.add(orderAssignment);
-
     List<OrderAssignment> initialAssignments = orderAssignmentService
         .findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.INITIAL);
     if (Objects.nonNull(initialAssignments)) {
-      initialAssignments.forEach(initialAssignment -> {
-        initialAssignment.setAssignedStatus(Status.CANCELLED_BY_SYSTEM);
-        toBeSavedAssignments.add(initialAssignment);
-        toBeSentOrders.add(initialAssignment.viewAsOrderAssignmentDTO());
-      });
-    }
+      List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
+      List<OrderAssignmentDTO> toBeSentAssignments = new ArrayList<>();
 
-    orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
+      initialAssignments.forEach(initialAssignment -> {
+        if(orderAssignment.getId() != initialAssignment.getId()) {
+          initialAssignment.setAssignedStatus(Status.CANCELLED_BY_SYSTEM);
+          toBeSentAssignments.add(initialAssignment.viewAsOrderAssignmentDTO());
+        } else {
+          initialAssignment.setAssignedStatus(Status.ACCEPTED);
+        }
+        toBeSavedAssignments.add(initialAssignment);
+      });
+
+      orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
+      simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentAssignments);
+    }
   }
 
   private List<OrderAssignment> getNewAssignments(int offset, OrderOutputDTO orderOutputDTO) {
