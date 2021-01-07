@@ -63,7 +63,7 @@ public class OrganizationController {
 					.orderId(1l)
 					.organizationId(org.getId())
 					.assignedAt(index == 1 ? LocalDateTime.now() : null)
-					.assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
+					.assignedStatus(index == 1 ? Status.PENDING : Status.SEARCHING)
 					.orderType(OrderType.CLOSEST)
 					.priority(index)
 					.offsetPaginate(0)

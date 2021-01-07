@@ -65,7 +65,7 @@ public class OrderServiceImpl implements OrderService {
                 .latitude(orderCreateDTO.getLatitude())
                 .longitude(orderCreateDTO.getLongitude())
                 .orderRef(orderRef)
-                .status(Status.INITIAL)
+                .status(Status.SEARCHING)
                 .orderType(orderCreateDTO.getOrderType())
                 .organizationId(orderCreateDTO.getOrderType() == OrderType.PREFERRED ? orderCreateDTO.getOrganizationId() : 0)
                 .organizationTypeId(orderCreateDTO.getOrganizationTypeId())
@@ -129,7 +129,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderAndPeriodDTO> getCurrentOrders(long orgTypeId, long userId) {
-        List<OrderOutputDTO> orderOutputDTOS = orderRepository.getCurrentOrders(orgTypeId, userId, Status.CLOSED)
+        List<OrderOutputDTO> orderOutputDTOS = orderRepository.getOrdersByStatues(orgTypeId, userId, List.of(Status.SEARCHING, Status.ACCEPTED))
                 .orElseThrow(() -> new ResourceNotFoundException("No data found"))
                 .stream().map(Order::viewAsOrderOutputDTO)
                 .collect(Collectors.toList());
@@ -139,7 +139,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderAndPeriodDTO> getPastOrders(long orgTypeId, long userId) {
-        List<OrderOutputDTO> orderOutputDTOS = orderRepository.getPastOrders(orgTypeId, userId, Status.CLOSED)
+        List<OrderOutputDTO> orderOutputDTOS = orderRepository.getOrdersByStatues(orgTypeId, userId, List.of(Status.CANCELLED, Status.COMPLETED))
                 .orElseThrow(() -> new ResourceNotFoundException("No data found"))
                 .stream().map(Order::viewAsOrderOutputDTO)
                 .collect(Collectors.toList());

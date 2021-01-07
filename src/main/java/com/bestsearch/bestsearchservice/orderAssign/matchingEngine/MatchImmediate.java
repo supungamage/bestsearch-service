@@ -87,7 +87,7 @@ public class MatchImmediate implements IMatchBehaviour{
 
     Map<Long, Integer> orderIdVsDistance = new HashMap<>();
     timeFlyOrderAssignments.forEach(oa -> {
-      oa.setAssignedStatus(Status.CANCELLED);
+      oa.setAssignedStatus(Status.NO_RESPONSE);
       orderIdVsDistance.put(oa.getOrderId(), oa.getOffsetPaginate()); //all radius shd be same for given orderId
     });
 
@@ -143,13 +143,12 @@ public class MatchImmediate implements IMatchBehaviour{
     List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
     List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
 
-    toBeSavedAssignments.add(orderAssignment);
-    toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
-
     List<OrderAssignment> pendingAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
     if (Objects.nonNull(pendingAssignments)) {
       pendingAssignments.forEach(pendingAssignment -> {
-        pendingAssignment.setAssignedStatus(Status.CANCELLED);
+        pendingAssignment.setAssignedStatus(
+                pendingAssignment.getId() == orderAssignment.getId()
+                ? Status.ACCEPTED : Status.CANCELLED_BY_SYSTEM);
         toBeSavedAssignments.add(pendingAssignment);
         toBeSentOrders.add(pendingAssignment.viewAsOrderAssignmentDTO());
       });

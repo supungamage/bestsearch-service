@@ -64,14 +64,14 @@ public class OrderAssignmentService {
   }
 
   public Map<LocalDate, List<OrderAssignmentDTO>> getCurrentAssignments(long organizationId) {
-    return orderAssignmentRepository.getCurrentAssignments(organizationId, Status.PENDING)
+    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.PENDING, Status.ACCEPTED))
             .orElseThrow(() -> new ResourceNotFoundException("No data found"))
             .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
             .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
   }
 
   public Map<LocalDate, List<OrderAssignmentDTO>> getPastAssignments(long organizationId) {
-    return orderAssignmentRepository.getPastAssignments(organizationId, List.of(Status.ACCEPTED, Status.REJECTED))
+    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.REJECTED, Status.COMPLETED))
             .orElseThrow(() -> new ResourceNotFoundException("No data found"))
             .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
             .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));

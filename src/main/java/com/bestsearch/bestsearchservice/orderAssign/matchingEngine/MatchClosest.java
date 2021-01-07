@@ -1,10 +1,7 @@
 package com.bestsearch.bestsearchservice.orderAssign.matchingEngine;
 
 
-import static java.util.stream.Collectors.toList;
-
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
-import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.order.service.OrderService;
@@ -19,7 +16,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -87,7 +83,7 @@ public class MatchClosest implements IMatchBehaviour {
     }
 
     timeFlyOrderAssignments.forEach(timeFlyOrderAssignment -> {
-      timeFlyOrderAssignment.setAssignedStatus(Status.CANCELLED);
+      timeFlyOrderAssignment.setAssignedStatus(Status.NO_RESPONSE);
       handleReject(timeFlyOrderAssignment);
     });
   }
@@ -96,11 +92,11 @@ public class MatchClosest implements IMatchBehaviour {
     List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
     List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
     toBeSavedAssignments.add(orderAssignment);
-    if(orderAssignment.getAssignedStatus() == Status.CANCELLED) { //for time fly orders notify via web socket
+    if(orderAssignment.getAssignedStatus() == Status.NO_RESPONSE) { //for time fly orders notify via web socket
       toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
     }
     OrderAssignment nextAssignment = orderAssignmentService.findNextAssignment(orderAssignment.getOrderId(),
-            Status.INITIAL, orderAssignment.getPriority() + 1);
+            Status.SEARCHING, orderAssignment.getPriority() + 1);
 
     if(Objects.nonNull(nextAssignment)) {
       nextAssignment.setAssignedStatus(Status.PENDING);
@@ -133,10 +129,10 @@ public class MatchClosest implements IMatchBehaviour {
 
     toBeSavedAssignments.add(orderAssignment);
 
-    List<OrderAssignment> initialAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.INITIAL);
+    List<OrderAssignment> initialAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.SEARCHING);
     if (Objects.nonNull(initialAssignments)) {
       initialAssignments.forEach(initialAssignment -> {
-        initialAssignment.setAssignedStatus(Status.CANCELLED);
+        initialAssignment.setAssignedStatus(Status.CANCELLED_BY_SYSTEM);
         toBeSavedAssignments.add(initialAssignment);
         toBeSentOrders.add(initialAssignment.viewAsOrderAssignmentDTO());
       });
@@ -159,7 +155,7 @@ public class MatchClosest implements IMatchBehaviour {
           .orderId(orderOutputDTO.getId())
           .organizationId(org.getId())
           .assignedAt(index == 1 ? LocalDateTime.now() : null)
-          .assignedStatus(index == 1 ? Status.PENDING : Status.INITIAL)
+          .assignedStatus(index == 1 ? Status.PENDING : Status.SEARCHING)
           .orderType(OrderType.CLOSEST)
           .priority(index)
           .offsetPaginate(offset)
