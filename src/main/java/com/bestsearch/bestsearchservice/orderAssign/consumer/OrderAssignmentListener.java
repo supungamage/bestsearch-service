@@ -25,12 +25,12 @@ import java.util.Objects;
 @Slf4j
 @Component
 @Lazy
-public class SQSListener {
+public class OrderAssignmentListener {
 
   private final MatchingFactory matchingFactory;
   private final ObjectMapper objectmapper;
 
-  public SQSListener(MatchingFactory matchingFactory, final ObjectMapper objectmapper) {
+  public OrderAssignmentListener(MatchingFactory matchingFactory, final ObjectMapper objectmapper) {
     this.matchingFactory = matchingFactory;
     this.objectmapper = objectmapper;
   }
@@ -39,8 +39,9 @@ public class SQSListener {
   public void onMessage(String message) throws JsonProcessingException {
     OrderOutputDTO orderOutputDTO = objectmapper.readValue(message, OrderOutputDTO.class);
     log.info("New order received for matching engine", orderOutputDTO.getOrderRef());
-    if(Objects.nonNull(orderOutputDTO) && Objects.nonNull(orderOutputDTO.getId())) {
-      new MatchingContext(matchingFactory.getMatch(orderOutputDTO.getOrderType())).doMatch(orderOutputDTO);
+    if (Objects.nonNull(orderOutputDTO) && Objects.nonNull(orderOutputDTO.getId())) {
+      new MatchingContext(matchingFactory.getMatch(orderOutputDTO.getOrderType()))
+          .doMatch(orderOutputDTO);
     }
   }
 }

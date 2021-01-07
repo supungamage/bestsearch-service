@@ -7,6 +7,7 @@ import com.bestsearch.bestsearchservice.order.service.OrderService;
 import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.orderAssign.mapper.OrderAssignmentMapper;
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
+import com.bestsearch.bestsearchservice.orderAssign.producer.OrderProducer;
 import com.bestsearch.bestsearchservice.orderAssign.service.OrderAssignmentService;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
@@ -23,7 +24,7 @@ import javax.swing.text.html.parser.Entity;
 
 @Slf4j
 @Component
-public class MatchImmediate implements IMatchBehaviour{
+public class MatchImmediate implements IMatchBehaviour {
 
 
   private final OrganizationService organizationService;
@@ -36,16 +37,20 @@ public class MatchImmediate implements IMatchBehaviour{
 
   private final OrderService orderService;
 
+  private final OrderProducer orderProducer;
+
   public MatchImmediate(final OrganizationService organizationService,
-                        final OrderAssignmentService orderAssignmentService,
-                        final SimpMessagingTemplate simpMessagingTemplate,
-                        final OrderAssignmentMapper orderAssignmentMapper,
-                        final OrderService orderService) {
+      final OrderAssignmentService orderAssignmentService,
+      final SimpMessagingTemplate simpMessagingTemplate,
+      final OrderAssignmentMapper orderAssignmentMapper,
+      final OrderService orderService,
+      final OrderProducer orderProducer) {
     this.organizationService = organizationService;
     this.orderAssignmentService = orderAssignmentService;
     this.simpMessagingTemplate = simpMessagingTemplate;
     this.orderAssignmentMapper = orderAssignmentMapper;
     this.orderService = orderService;
+    this.orderProducer = orderProducer;
   }
 
   @Override
@@ -57,21 +62,22 @@ public class MatchImmediate implements IMatchBehaviour{
         orderOutputDTO
     );
 
-      orderAssignmentService.saveOrderAssignments(orderAssignments);
+    orderAssignmentService.saveOrderAssignments(orderAssignments);
 
-      // push everything to web socket queue
-      simpMessagingTemplate.convertAndSend("/topic/hello"  , orderAssignments.stream().map(
-          orderAssignmentMapper::toOrderAssignmentDTO
-      ));
+    // push everything to web socket queue
+    simpMessagingTemplate.convertAndSend("/topic/hello", orderAssignments.stream().map(
+        orderAssignmentMapper::toOrderAssignmentDTO
+    ));
 
   }
 
   @Override
   public OrderAssignmentDTO match(OrderAssignmentDTO orderAssignmentDTO) {
     OrderAssignment orderAssignment = orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO);
-    if(orderAssignmentDTO.getAssignedStatus() == Status.REJECTED){
+    // TODO: populate/validate orgId from context
+    if (orderAssignmentDTO.getAssignedStatus() == Status.REJECTED) {
       handleReject(orderAssignment);
-    } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED){
+    } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED) {
       handleAccept(orderAssignment);
     }
 
@@ -80,14 +86,15 @@ public class MatchImmediate implements IMatchBehaviour{
 
   @Override
   public void match() {
-    List<OrderAssignment> timeFlyOrderAssignments = orderAssignmentService.findTimeFlyOrders(OrderType.IMMEDIATE);
-    if(Objects.isNull(timeFlyOrderAssignments)) {
+    List<OrderAssignment> timeFlyOrderAssignments = orderAssignmentService
+        .findTimeFlyOrders(OrderType.IMMEDIATE);
+    if (Objects.isNull(timeFlyOrderAssignments)) {
       return;
     }
 
     Map<Long, Integer> orderIdVsDistance = new HashMap<>();
     timeFlyOrderAssignments.forEach(oa -> {
-      oa.setAssignedStatus(Status.NO_RESPONSE);
+      oa.setAssignedStatus(Status.CANCELLED);
       orderIdVsDistance.put(oa.getOrderId(), oa.getOffsetPaginate()); //all radius shd be same for given orderId
     });
 
@@ -109,7 +116,7 @@ public class MatchImmediate implements IMatchBehaviour{
 
     });
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    simpMessagingTemplate.convertAndSend("/topic/hello" ,toBeSentOrders);
+    simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
   }
 
   private void handleReject(OrderAssignment orderAssignment) {
@@ -118,7 +125,8 @@ public class MatchImmediate implements IMatchBehaviour{
     toBeSavedAssignments.add(orderAssignment);
     toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
 
-    List<OrderAssignment> pendingAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
+    List<OrderAssignment> pendingAssignments = orderAssignmentService
+        .findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
 
     if(Objects.isNull(pendingAssignments) || pendingAssignments.size() < 1) {
       OrderOutputDTO orderOutputDTO = orderService.getOrderById(orderAssignment.getOrderId());
@@ -136,34 +144,42 @@ public class MatchImmediate implements IMatchBehaviour{
     }
 
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    simpMessagingTemplate.convertAndSend("/topic/hello" ,toBeSentOrders);
+    simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentOrders);
   }
 
   private void handleAccept(OrderAssignment orderAssignment) {
     List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
     List<OrderAssignmentDTO> toBeSentOrders = new ArrayList<>();
 
+    toBeSavedAssignments.add(orderAssignment);
+    toBeSentOrders.add(orderAssignment.viewAsOrderAssignmentDTO());
+
     List<OrderAssignment> pendingAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
     if (Objects.nonNull(pendingAssignments)) {
       pendingAssignments.forEach(pendingAssignment -> {
-        pendingAssignment.setAssignedStatus(
-                pendingAssignment.getId() == orderAssignment.getId()
-                ? Status.ACCEPTED : Status.CANCELLED_BY_SYSTEM);
+        pendingAssignment.setAssignedStatus(Status.CANCELLED);
         toBeSavedAssignments.add(pendingAssignment);
         toBeSentOrders.add(pendingAssignment.viewAsOrderAssignmentDTO());
       });
     }
 
     orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-    simpMessagingTemplate.convertAndSend("/topic/hello" ,toBeSentOrders);
+
+    orderProducer.send(orderAssignment.viewAsOrderAssignmentDTO());
+
+    simpMessagingTemplate
+        .convertAndSend("/topic/hello", toBeSentOrders); // TODO: Include accepted order
+
+
   }
 
 
-  private List<OrderAssignment> getNewAssignments(int offset, OrderOutputDTO orderOutputDTO){
-    List<OrganizationOutputDTO> organizationOutputDTOs = organizationService.getOrderedActiveOrganizationsWithinRadius(
-        orderOutputDTO.getLatitude(),
-        orderOutputDTO.getLongitude(),
-        offset);
+  private List<OrderAssignment> getNewAssignments(int offset, OrderOutputDTO orderOutputDTO) {
+    List<OrganizationOutputDTO> organizationOutputDTOs = organizationService
+        .getOrderedActiveOrganizationsWithinRadius(
+            orderOutputDTO.getLatitude(),
+            orderOutputDTO.getLongitude(),
+            offset);
 
     return organizationOutputDTOs.stream()
         .map(org -> OrderAssignment.builder()

@@ -76,4 +76,10 @@ public class OrderAssignmentService {
             .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
             .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
   }
+
+  public OrderAssignmentDTO updateOrderAssignment(long orderAssignmentId, String status) {
+    return orderAssignmentRepository
+        .save(OrderAssignment.builder().id(orderAssignmentId).assignedStatus(Status.valueOf(status))
+            .build()).viewAsOrderAssignmentDTO();
+  }
 }
