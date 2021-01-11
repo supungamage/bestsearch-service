@@ -60,17 +60,11 @@ public class MatchClosest implements IMatchBehaviour {
   @Override
   public void match(OrderOutputDTO orderOutputDTO) {
     log.info("Closest order:", orderOutputDTO.getOrderRef());
-
-    List<OrderAssignment> orderAssignments = getNewAssignments(
-        0, // initial offset
-        orderOutputDTO
-    );
-
-    orderAssignmentService.saveOrderAssignments(orderAssignments);
-
-    // push 1st one to web socket queue
-    simpMessagingTemplate.convertAndSend("/topic/hello", List.of(
-        orderAssignmentMapper.toOrderAssignmentDTO(orderAssignments.get(0))));
+    switch (orderOutputDTO.getStatus()) {
+      case COMPLETED: this.completeOrder(orderOutputDTO);
+      case CANCELLED: this.cancelOrder(orderOutputDTO);
+      default: this.addAssignment(orderOutputDTO);
+    }
   }
 
   @Override
@@ -179,5 +173,47 @@ public class MatchClosest implements IMatchBehaviour {
     }
 
     return newAssignments;
+  }
+
+  private void addAssignment(OrderOutputDTO orderOutputDTO) {
+    log.info("Adding new assignments:", orderOutputDTO.getOrderRef());
+    List<OrderAssignment> orderAssignments = getNewAssignments(
+            0, // initial offset
+            orderOutputDTO
+    );
+
+    orderAssignmentService.saveOrderAssignments(orderAssignments);
+
+    // push 1st one to web socket queue
+    simpMessagingTemplate.convertAndSend("/topic/hello", List.of(
+            orderAssignmentMapper.toOrderAssignmentDTO(orderAssignments.get(0))));
+
+  }
+
+  private void completeOrder(OrderOutputDTO orderOutputDTO) {
+    log.info("Completing order by user:", orderOutputDTO.getOrderRef());
+    OrderAssignment acceptedAssignment = orderAssignmentService.findByOrderIdAndAssignedStatus(orderOutputDTO.getId(), Status.ACCEPTED).get(0);
+    acceptedAssignment.setAssignedStatus(Status.COMPLETED);
+    orderAssignmentService.saveOrderAssignment(acceptedAssignment.viewAsOrderAssignmentDTO());
+
+    // push to web socket queue
+    simpMessagingTemplate.convertAndSend("/topic/hello", List.of(
+            orderAssignmentMapper.toOrderAssignmentDTO(acceptedAssignment)));
+  }
+
+  private void cancelOrder(OrderOutputDTO orderOutputDTO) {
+    log.info("Cancelling order by user:", orderOutputDTO.getOrderRef());
+
+    orderAssignmentService.updateOrderAssignmentByOrderAndStatus(orderOutputDTO.getId(), Status.CANCELLED_BY_SYSTEM
+            , List.of(Status.INITIAL));
+
+    List<OrderAssignment> openOrderAssignments = orderAssignmentService.findByOrderIdAndAssignedStatuses(
+            orderOutputDTO.getId(), List.of(Status.PENDING, Status.ACCEPTED));
+
+    openOrderAssignments.forEach(orderAssignment -> orderAssignment.setAssignedStatus(Status.CANCELLED));
+    orderAssignmentService.saveOrderAssignments(openOrderAssignments);
+
+    // push to web socket queue
+    simpMessagingTemplate.convertAndSend("/topic/hello", openOrderAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO));
   }
 }

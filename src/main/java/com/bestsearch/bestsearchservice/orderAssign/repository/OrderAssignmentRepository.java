@@ -22,7 +22,10 @@ public interface OrderAssignmentRepository extends JpaRepository<OrderAssignment
 
   List<OrderAssignment> findByOrderId(Long id);
 
-  List<OrderAssignment> findByOrderIdAndAssignedStatusNot(Long id, Status orderAssignStatus);
+  @Query(value = "SELECT oa FROM OrderAssignment oa " +
+          "WHERE oa.orderId = :id " +
+          "and oa.assignedStatus in :statuses ")
+  List<OrderAssignment> findByOrderIdAndAssignedStatuses(Long id, List<Status> orderAssignStatuses);
 
   List<OrderAssignment> findByOrderIdAndAssignedStatus(Long id, Status orderAssignStatus);
 
@@ -35,4 +38,8 @@ public interface OrderAssignmentRepository extends JpaRepository<OrderAssignment
           "and oa.assignedStatus in :statuses " +
           "ORDER BY oa.assignedAt")
   Optional<List<OrderAssignment>> getAssignmentsByStatuses(long organizationId, List<Status> statuses);
+
+  @Modifying
+  @Query(value = "UPDATE OrderAssignment oa SET oa.assignedStatus = ?2 WHERE oa.orderId = ?1 AND oa.assignedStatus in (?3)")
+  void updateOrderAssignmentByOrderId(long orderId, Status toStatus, List<Status> fromStatues);
 }

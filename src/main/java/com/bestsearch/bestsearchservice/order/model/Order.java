@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import javax.persistence.*;
@@ -18,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 @Entity
 @Table(name = "orders")
 @Getter
+@Setter
 @SuperBuilder
 @NoArgsConstructor
 public class Order extends Auditable<String> {

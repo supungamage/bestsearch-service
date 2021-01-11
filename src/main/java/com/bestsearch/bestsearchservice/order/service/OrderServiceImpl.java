@@ -10,6 +10,7 @@ import com.bestsearch.bestsearchservice.order.utils.IdentifierGenerator;
 import com.bestsearch.bestsearchservice.order.utils.OrderDateFormatter;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
+import com.bestsearch.bestsearchservice.share.exception.OperationAbortedException;
 import com.bestsearch.bestsearchservice.share.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -110,18 +111,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderOutputDTO updateOrder(long id, OrderInputDTO orderInputDTO) {
-        return orderRepository.save(Order.builder()
-                .id(id)
-                .latitude(orderInputDTO.getLatitude())
-                .longitude(orderInputDTO.getLongitude())
-                .orderRef("")
-                .status(orderInputDTO.getStatus())
-                .orderType(orderInputDTO.getOrderType())
-                .organizationId(orderInputDTO.getOrganizationId())
-                .organizationTypeId(orderInputDTO.getOrganizationTypeId())
-                .userId(orderInputDTO.getUserId())
-                .userComment(orderInputDTO.getUserComment())
-                .build()).viewAsOrderOutputDTO();
+        Order order = orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("No data found"));
+        if(!this.isOrderChanged(order, orderInputDTO)) {
+            throw  new OperationAbortedException("No changes requested");
+        }
+
+        this.updateOrder(order, orderInputDTO);
+        OrderOutputDTO savedOrder = orderRepository.save(order).viewAsOrderOutputDTO();
+        producer.send(savedOrder);
+
+        return savedOrder;
     }
 
     @Override
@@ -180,5 +179,20 @@ public class OrderServiceImpl implements OrderService {
                 .map(o -> new OrderAndPeriodDTO(OrderDateFormatter.formatForUI(o.getKey()), o.getValue()))
                 .collect(Collectors.toList());
     }
-    
+
+    private void updateOrder(Order order, OrderInputDTO orderInputDTO) {
+        order.setUserComment(orderInputDTO.getUserComment());
+        if(orderInputDTO.getStatus() == Status.CANCELLED || orderInputDTO.getStatus() == Status.COMPLETED) {
+            order.setStatus(orderInputDTO.getStatus());
+        }
+    }
+
+    private boolean isOrderChanged(Order order, OrderInputDTO orderInputDTO) {
+        if(order.getStatus() == orderInputDTO.getStatus()
+                && order.getUserComment().trim().equals(orderInputDTO.getUserComment())) {
+            return false;
+        }
+
+        return true;
+    }
 }
