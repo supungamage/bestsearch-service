@@ -97,6 +97,7 @@ public class OrderController {
             @RequestParam("longitude") Double longitude,
             @RequestParam("latitude") Double latitude,
             @RequestParam("organizationId") Long organizationId,
+            @RequestParam("userComment") String userComment,
             @RequestParam("files") MultipartFile files[]) {
 
 //        return Arrays.asList(files)
@@ -118,6 +119,7 @@ public class OrderController {
             .longitude(longitude)
             .latitude(latitude)
             .organizationId(organizationId)
+            .userComment(userComment)
             .images(images)
             .build()));
     }
