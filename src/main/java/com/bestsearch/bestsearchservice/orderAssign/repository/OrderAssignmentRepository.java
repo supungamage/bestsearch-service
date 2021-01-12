@@ -25,7 +25,7 @@ public interface OrderAssignmentRepository extends JpaRepository<OrderAssignment
   @Query(value = "SELECT oa FROM OrderAssignment oa " +
           "WHERE oa.orderId = :id " +
           "and oa.assignedStatus in :statuses ")
-  List<OrderAssignment> findByOrderIdAndAssignedStatuses(Long id, List<Status> orderAssignStatuses);
+  List<OrderAssignment> findByOrderIdAndAssignedStatuses(Long id, List<Status> statuses);
 
   List<OrderAssignment> findByOrderIdAndAssignedStatus(Long id, Status orderAssignStatus);
 

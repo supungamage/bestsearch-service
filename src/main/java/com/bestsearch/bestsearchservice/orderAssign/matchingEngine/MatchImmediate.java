@@ -155,23 +155,25 @@ public class MatchImmediate implements IMatchBehaviour {
       List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
       List<OrderAssignmentDTO> toBeSentAssignments = new ArrayList<>();
 
-      pendingAssignments.forEach(pendingAssignment -> {
-        if(orderAssignment.getId() != pendingAssignment.getId()) {
+      OrderAssignment acceptedAssignment = null;
+      for(OrderAssignment pendingAssignment : pendingAssignments) {
+        if(orderAssignment.getId().equals(pendingAssignment.getId())) {
           pendingAssignment.setAssignedStatus(Status.ACCEPTED);
+          acceptedAssignment = pendingAssignment;
         } else {
           pendingAssignment.setAssignedStatus(Status.CANCELLED_BY_SYSTEM);
           toBeSentAssignments.add(pendingAssignment.viewAsOrderAssignmentDTO());
         }
 
         toBeSavedAssignments.add(pendingAssignment);
-      });
+      }
+
+      orderAssignment = acceptedAssignment;
 
       orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
       simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentAssignments);
-
+      orderProducer.send(orderAssignment.viewAsOrderAssignmentDTO());
     }
-
-    orderProducer.send(orderAssignment.viewAsOrderAssignmentDTO());
   }
 
 

@@ -133,20 +133,22 @@ public class MatchClosest implements IMatchBehaviour {
         .findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.INITIAL);
     if (Objects.nonNull(initialAssignments)) {
       List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
-      List<OrderAssignmentDTO> toBeSentAssignments = new ArrayList<>();
 
-      initialAssignments.forEach(initialAssignment -> {
-        if(orderAssignment.getId() != initialAssignment.getId()) {
+      OrderAssignment acceptedAssignment = null;
+      for(OrderAssignment initialAssignment : initialAssignments) {
+        if(!orderAssignment.getId().equals(initialAssignment.getId())) {
           initialAssignment.setAssignedStatus(Status.CANCELLED_BY_SYSTEM);
-          toBeSentAssignments.add(initialAssignment.viewAsOrderAssignmentDTO());
         } else {
           initialAssignment.setAssignedStatus(Status.ACCEPTED);
+          acceptedAssignment = initialAssignment;
         }
         toBeSavedAssignments.add(initialAssignment);
-      });
+      }
+
+      orderAssignment = acceptedAssignment;
 
       orderAssignmentService.saveOrderAssignments(toBeSavedAssignments);
-      simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentAssignments);
+      orderProducer.send(orderAssignment.viewAsOrderAssignmentDTO());
     }
   }
 
