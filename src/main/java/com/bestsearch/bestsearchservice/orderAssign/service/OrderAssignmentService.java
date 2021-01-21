@@ -63,6 +63,10 @@ public class OrderAssignmentService {
     return orderAssignmentRepository.findByOrderIdAndAssignedStatus(orderId, assignedStatus);
   }
 
+  public List<OrderAssignment> findByOrderIdAndAssignedStatuses(long orderId, List<Status> assignedStatuses) {
+    return orderAssignmentRepository.findByOrderIdAndAssignedStatuses(orderId, assignedStatuses);
+  }
+
   public Map<LocalDate, List<OrderAssignmentDTO>> getCurrentAssignments(long organizationId) {
     return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.PENDING, Status.ACCEPTED))
             .orElseThrow(() -> new ResourceNotFoundException("No data found"))
@@ -71,7 +75,7 @@ public class OrderAssignmentService {
   }
 
   public Map<LocalDate, List<OrderAssignmentDTO>> getPastAssignments(long organizationId) {
-    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.REJECTED, Status.COMPLETED))
+    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.REJECTED, Status.COMPLETED, Status.NO_RESPONSE))
             .orElseThrow(() -> new ResourceNotFoundException("No data found"))
             .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
             .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
@@ -81,5 +85,9 @@ public class OrderAssignmentService {
     return orderAssignmentRepository
         .save(OrderAssignment.builder().id(orderAssignmentId).assignedStatus(Status.valueOf(status))
             .build()).viewAsOrderAssignmentDTO();
+  }
+
+  public void updateOrderAssignmentByOrderAndStatus(long orderId, Status toStatus, List<Status> fromStatues) {
+    orderAssignmentRepository.updateOrderAssignmentByOrderId(orderId, toStatus, fromStatues);
   }
 }
