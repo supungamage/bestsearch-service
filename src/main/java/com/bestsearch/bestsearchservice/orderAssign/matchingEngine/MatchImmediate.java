@@ -1,5 +1,6 @@
 package com.bestsearch.bestsearchservice.orderAssign.matchingEngine;
 
+import com.bestsearch.bestsearchservice.auth.UserAdditionalInfo;
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
@@ -18,6 +19,8 @@ import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import javax.swing.text.html.parser.Entity;
@@ -74,7 +77,11 @@ public class MatchImmediate implements IMatchBehaviour {
   @Override
   public OrderAssignmentDTO match(OrderAssignmentDTO orderAssignmentDTO) {
     OrderAssignment orderAssignment = orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO);
-    // TODO: populate/validate orgId from context
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    UserAdditionalInfo userAdditionalInfo = (UserAdditionalInfo) authentication.getDetails();
+    orderAssignment.setOrganizationId(Long.valueOf(userAdditionalInfo.getInternalId()));
+
     if (orderAssignmentDTO.getAssignedStatus() == Status.REJECTED) {
       handleReject(orderAssignment);
     } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED) {
@@ -86,21 +93,23 @@ public class MatchImmediate implements IMatchBehaviour {
 
   @Override
   public void match() {
-    List<OrderAssignment> timeFlyOrderAssignments = orderAssignmentService.findTimeFlyOrders(OrderType.IMMEDIATE);
+    List<OrderAssignment> timeFlyOrderAssignments = orderAssignmentService
+        .findTimeFlyOrders(OrderType.IMMEDIATE);
     if (Objects.isNull(timeFlyOrderAssignments)) {
       return;
     }
 
-    if(Objects.nonNull(timeFlyOrderAssignments) && timeFlyOrderAssignments.size() > 0) {
+    if (Objects.nonNull(timeFlyOrderAssignments) && timeFlyOrderAssignments.size() > 0) {
       Map<Long, Integer> orderIdVsOffset = new HashMap<>();
       timeFlyOrderAssignments.forEach(oa -> {
         oa.setAssignedStatus(Status.NO_RESPONSE);
-        orderIdVsOffset.put(oa.getOrderId(), oa.getOffsetPaginate()); //all radius shd be same for given orderId
+        orderIdVsOffset.put(oa.getOrderId(),
+            oa.getOffsetPaginate()); //all radius shd be same for given orderId
       });
 
       orderAssignmentService.saveOrderAssignments(timeFlyOrderAssignments);
       simpMessagingTemplate.convertAndSend("/topic/hello"
-              , timeFlyOrderAssignments.stream().map(orderAssignmentMapper::toOrderAssignmentDTO));
+          , timeFlyOrderAssignments.stream().map(orderAssignmentMapper::toOrderAssignmentDTO));
 
       List<OrderOutputDTO> orderOutputDTOs = orderService.getOrdersById(orderIdVsOffset.keySet());
 
@@ -108,10 +117,13 @@ public class MatchImmediate implements IMatchBehaviour {
       List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
 
       orderOutputDTOs.forEach(orderOutputDTO -> {
-        List<OrderAssignment> newAssignments = getNewAssignments(orderIdVsOffset.get(orderOutputDTO.getId()), orderOutputDTO);
-        if(Objects.nonNull(newAssignments)) {
+        List<OrderAssignment> newAssignments = getNewAssignments(
+            orderIdVsOffset.get(orderOutputDTO.getId()), orderOutputDTO);
+        if (Objects.nonNull(newAssignments)) {
           toBeSavedAssignments.addAll(newAssignments);
-          toBeSentOrders.addAll(newAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList()));
+          toBeSentOrders.addAll(
+              newAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
+                  .collect(Collectors.toList()));
         } else {
           //TODO: no pharmacies notify user
         }
@@ -129,18 +141,18 @@ public class MatchImmediate implements IMatchBehaviour {
     List<OrderAssignment> pendingAssignments = orderAssignmentService
         .findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
 
-    if(Objects.isNull(pendingAssignments) || pendingAssignments.size() < 1) {
+    if (Objects.isNull(pendingAssignments) || pendingAssignments.size() < 1) {
       OrderOutputDTO orderOutputDTO = orderService.getOrderById(orderAssignment.getOrderId());
       List<OrderAssignment> newAssignments = getNewAssignments(
           orderAssignment.getOffsetPaginate() + 1,
           orderOutputDTO
       );
 
-      if(!newAssignments.isEmpty()) {
+      if (!newAssignments.isEmpty()) {
         toBeSavedAssignments.addAll(newAssignments);
         simpMessagingTemplate.convertAndSend("/topic/hello", newAssignments.stream()
-                .map(OrderAssignment::viewAsOrderAssignmentDTO)
-                .collect(Collectors.toList()));
+            .map(OrderAssignment::viewAsOrderAssignmentDTO)
+            .collect(Collectors.toList()));
       } else {
         //TODO: no pharmacies notify user
       }
@@ -150,14 +162,15 @@ public class MatchImmediate implements IMatchBehaviour {
   }
 
   private void handleAccept(OrderAssignment orderAssignment) {
-    List<OrderAssignment> pendingAssignments = orderAssignmentService.findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
+    List<OrderAssignment> pendingAssignments = orderAssignmentService
+        .findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.PENDING);
     if (Objects.nonNull(pendingAssignments)) {
       List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
       List<OrderAssignmentDTO> toBeSentAssignments = new ArrayList<>();
 
       OrderAssignment acceptedAssignment = null;
-      for(OrderAssignment pendingAssignment : pendingAssignments) {
-        if(orderAssignment.getId().equals(pendingAssignment.getId())) {
+      for (OrderAssignment pendingAssignment : pendingAssignments) {
+        if (orderAssignment.getId().equals(pendingAssignment.getId())) {
           pendingAssignment.setAssignedStatus(Status.ACCEPTED);
           acceptedAssignment = pendingAssignment;
         } else {
