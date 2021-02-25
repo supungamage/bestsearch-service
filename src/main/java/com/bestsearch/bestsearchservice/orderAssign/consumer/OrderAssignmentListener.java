@@ -38,7 +38,7 @@ public class OrderAssignmentListener {
   @SqsListener(value = "${aws.sqs.order}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
   public void onMessage(String message) throws JsonProcessingException {
     OrderOutputDTO orderOutputDTO = objectmapper.readValue(message, OrderOutputDTO.class);
-    log.info("New order received for matching engine", orderOutputDTO.getOrderRef());
+    log.info("New/updated order received for matching engine", orderOutputDTO.getOrderRef());
     if (Objects.nonNull(orderOutputDTO) && Objects.nonNull(orderOutputDTO.getId())) {
       new MatchingContext(matchingFactory.getMatch(orderOutputDTO.getOrderType()))
           .doMatch(orderOutputDTO);

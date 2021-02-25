@@ -1,11 +1,8 @@
 package com.bestsearch.bestsearchservice.orderAssign.matchingEngine;
 
 
-import static java.util.stream.Collectors.toList;
-
 import com.bestsearch.bestsearchservice.auth.UserAdditionalInfo;
 import com.bestsearch.bestsearchservice.order.dto.OrderOutputDTO;
-import com.bestsearch.bestsearchservice.order.model.Order;
 import com.bestsearch.bestsearchservice.order.model.enums.OrderType;
 import com.bestsearch.bestsearchservice.order.model.enums.Status;
 import com.bestsearch.bestsearchservice.order.service.OrderService;
@@ -21,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -69,7 +65,7 @@ public class MatchClosest implements IMatchBehaviour {
       case CANCELLED:
         this.cancelOrder(orderOutputDTO);
       default:
-        this.addAssignment(orderOutputDTO);
+        this.addOrUpdate(orderOutputDTO);
     }
   }
 
@@ -191,23 +187,47 @@ public class MatchClosest implements IMatchBehaviour {
     return newAssignments;
   }
 
-  private void addAssignment(OrderOutputDTO orderOutputDTO) {
-    log.info("Adding new assignments:", orderOutputDTO.getOrderRef());
-    List<OrderAssignment> orderAssignments = getNewAssignments(
-        0, // initial offset
-        orderOutputDTO
+  private void addOrUpdate(OrderOutputDTO orderOutputDTO) {
+    List<OrderAssignmentDTO> orderAssignmentDTOS = orderAssignmentService.findByOrderId(orderOutputDTO.getId());
+
+    if(Objects.isNull(orderAssignmentDTOS) || orderAssignmentDTOS.isEmpty()) {
+      this.add(orderOutputDTO);
+    } else {
+      this.update(orderOutputDTO);
+    }
+  }
+
+  private void add(OrderOutputDTO orderOutputDTO) {
+    log.info("Adding new closest assignments:", orderOutputDTO.getOrderRef());
+    List<OrderAssignment> orderAssignments = this.getNewAssignments(
+            0, // initial offset
+            orderOutputDTO
     );
 
     orderAssignmentService.saveOrderAssignments(orderAssignments);
-
-    // push 1st one to web socket queue
     simpMessagingTemplate.convertAndSend("/topic/hello", List.of(
-        orderAssignmentMapper.toOrderAssignmentDTO(orderAssignments.get(0))));
+            orderAssignmentMapper.toOrderAssignmentDTO(orderAssignments.get(0))));
+  }
 
+  private void update(OrderOutputDTO orderOutputDTO) {
+    log.info("Updating closest assignments:", orderOutputDTO.getOrderRef());
+    List<OrderAssignment> assignmentsTobeUpdated = orderAssignmentService
+            .findByOrderIdAndAssignedStatuses(orderOutputDTO.getId(), List.of(Status.PENDING, Status.INITIAL, Status.ACCEPTED));
+    List<OrderAssignment> tobeSentAssignments = new ArrayList<>();
+    assignmentsTobeUpdated.forEach(orderAssignment -> {
+      orderAssignment.setUserComment(orderOutputDTO.getUserComment());
+      if(!orderAssignment.getAssignedStatus().equals(Status.INITIAL)) {
+        tobeSentAssignments.add(orderAssignment);
+      }
+    });
+
+    orderAssignmentService.saveOrderAssignments(assignmentsTobeUpdated);
+    simpMessagingTemplate.convertAndSend("/topic/hello", tobeSentAssignments.stream()
+            .map(OrderAssignment::viewAsOrderAssignmentDTO));
   }
 
   private void completeOrder(OrderOutputDTO orderOutputDTO) {
-    log.info("Completing order by user:", orderOutputDTO.getOrderRef());
+    log.info("Completing closest order by user:", orderOutputDTO.getOrderRef());
     OrderAssignment acceptedAssignment = orderAssignmentService
         .findByOrderIdAndAssignedStatus(orderOutputDTO.getId(), Status.ACCEPTED).get(0);
     acceptedAssignment.setAssignedStatus(Status.COMPLETED);
@@ -219,7 +239,7 @@ public class MatchClosest implements IMatchBehaviour {
   }
 
   private void cancelOrder(OrderOutputDTO orderOutputDTO) {
-    log.info("Cancelling order by user:", orderOutputDTO.getOrderRef());
+    log.info("Cancelling closest order by user:", orderOutputDTO.getOrderRef());
 
     orderAssignmentService
         .updateOrderAssignmentByOrderAndStatus(orderOutputDTO.getId(), Status.CANCELLED_BY_SYSTEM

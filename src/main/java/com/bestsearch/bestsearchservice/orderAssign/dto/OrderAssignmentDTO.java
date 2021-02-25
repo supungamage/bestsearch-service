@@ -27,6 +27,7 @@ public class OrderAssignmentDTO {
   private Status assignedStatus;
   private OrderType orderType;
   private int priority;
+  private String userComment;
 
   @JsonIgnore
   public LocalDate getAssignedDate() {

@@ -43,7 +43,7 @@ public class Order extends Auditable<String> {
     @NonNull
     private Double latitude;
 
-    private long organizationId;
+    private Long organizationId;
 
     private LocalDateTime orderedAt;
 

@@ -59,19 +59,48 @@ public class MatchImmediate implements IMatchBehaviour {
   @Override
   public void match(OrderOutputDTO orderOutputDTO) {
     log.info("Immediate order:", orderOutputDTO.getOrderRef());
+    switch (orderOutputDTO.getStatus()) {
+      case COMPLETED:
+        this.completeOrder(orderOutputDTO);
+      case CANCELLED:
+        this.cancelOrder(orderOutputDTO);
+      default:
+        this.addOrUpdate(orderOutputDTO);
+    }
+  }
 
-    List<OrderAssignment> orderAssignments = getNewAssignments(
-        0,
-        orderOutputDTO
+  private void addOrUpdate(OrderOutputDTO orderOutputDTO) {
+    List<OrderAssignmentDTO> orderAssignmentDTOS = orderAssignmentService.findByOrderId(orderOutputDTO.getId());
+
+    if(Objects.isNull(orderAssignmentDTOS) || orderAssignmentDTOS.isEmpty()) {
+      this.add(orderOutputDTO);
+    } else {
+      this.update(orderOutputDTO);
+    }
+  }
+
+  private void add(OrderOutputDTO orderOutputDTO) {
+    log.info("Adding new immediate assignments:", orderOutputDTO.getOrderRef());
+    List<OrderAssignment> orderAssignments = this.getNewAssignments(
+            0,
+            orderOutputDTO
     );
-
     orderAssignmentService.saveOrderAssignments(orderAssignments);
-
     // push everything to web socket queue
     simpMessagingTemplate.convertAndSend("/topic/hello", orderAssignments.stream().map(
-        orderAssignmentMapper::toOrderAssignmentDTO
+            orderAssignmentMapper::toOrderAssignmentDTO
     ));
+  }
 
+  private void update(OrderOutputDTO orderOutputDTO) {
+    log.info("Updating immediate assignments:", orderOutputDTO.getOrderRef());
+    List<OrderAssignment> assignmentsTobeUpdated = orderAssignmentService
+            .findByOrderIdAndAssignedStatuses(orderOutputDTO.getId(), List.of(Status.PENDING, Status.ACCEPTED));
+    assignmentsTobeUpdated.forEach(orderAssignment -> orderAssignment.setUserComment(orderOutputDTO.getUserComment()));
+
+    orderAssignmentService.saveOrderAssignments(assignmentsTobeUpdated);
+    simpMessagingTemplate.convertAndSend("/topic/hello", assignmentsTobeUpdated.stream()
+            .map(OrderAssignment::viewAsOrderAssignmentDTO));
   }
 
   @Override
@@ -207,5 +236,33 @@ public class MatchImmediate implements IMatchBehaviour {
             .priority(1)
             .offsetPaginate(offset)
             .build()).collect(Collectors.toList());
+  }
+
+  private void completeOrder(OrderOutputDTO orderOutputDTO) {
+    log.info("Completing immediate order by user:", orderOutputDTO.getOrderRef());
+    OrderAssignment acceptedAssignment = orderAssignmentService
+            .findByOrderIdAndAssignedStatus(orderOutputDTO.getId(), Status.ACCEPTED).get(0);
+    acceptedAssignment.setAssignedStatus(Status.COMPLETED);
+    orderAssignmentService.saveOrderAssignment(acceptedAssignment.viewAsOrderAssignmentDTO());
+
+    // push to web socket queue
+    simpMessagingTemplate.convertAndSend("/topic/hello", List.of(
+            orderAssignmentMapper.toOrderAssignmentDTO(acceptedAssignment)));
+  }
+
+  private void cancelOrder(OrderOutputDTO orderOutputDTO) {
+    log.info("Cancelling immediate order by user:", orderOutputDTO.getOrderRef());
+
+    List<OrderAssignment> openOrderAssignments = orderAssignmentService
+            .findByOrderIdAndAssignedStatuses(
+                    orderOutputDTO.getId(), List.of(Status.PENDING, Status.ACCEPTED));
+
+    openOrderAssignments
+            .forEach(orderAssignment -> orderAssignment.setAssignedStatus(Status.CANCELLED));
+    orderAssignmentService.saveOrderAssignments(openOrderAssignments);
+
+    // push to web socket queue
+    simpMessagingTemplate.convertAndSend("/topic/hello",
+            openOrderAssignments.stream().map(OrderAssignment::viewAsOrderAssignmentDTO));
   }
 }

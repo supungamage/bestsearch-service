@@ -41,6 +41,10 @@ public class OrderAssignmentService {
     orderAssignmentRepository.saveAll(assignments);
   }
 
+  public void saveOrderAssignment(OrderAssignment orderAssignment) {
+    orderAssignmentRepository.save(orderAssignment);
+  }
+
   public void saveOrderAssignment(OrderAssignmentDTO orderAssignmentDTO) {
     orderAssignmentRepository.save(orderAssignmentMapper.toOrderAssignment(orderAssignmentDTO));
   }
@@ -60,23 +64,25 @@ public class OrderAssignmentService {
   }
 
   public List<OrderAssignment> findByOrderIdAndAssignedStatus(long orderId, Status assignedStatus) {
-    return orderAssignmentRepository.findByOrderIdAndAssignedStatus(orderId, assignedStatus);
+    return orderAssignmentRepository.findByOrderIdAndAssignedStatus(orderId, assignedStatus)
+            .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"));
   }
 
   public List<OrderAssignment> findByOrderIdAndAssignedStatuses(long orderId, List<Status> assignedStatuses) {
-    return orderAssignmentRepository.findByOrderIdAndAssignedStatuses(orderId, assignedStatuses);
+    return orderAssignmentRepository.findByOrderIdAndAssignedStatuses(orderId, assignedStatuses)
+            .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"));
   }
 
   public Map<LocalDate, List<OrderAssignmentDTO>> getCurrentAssignments(long organizationId) {
     return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.PENDING, Status.ACCEPTED))
-            .orElseThrow(() -> new ResourceNotFoundException("No data found"))
+            .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"))
             .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
             .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
   }
 
   public Map<LocalDate, List<OrderAssignmentDTO>> getPastAssignments(long organizationId) {
     return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.REJECTED, Status.COMPLETED, Status.NO_RESPONSE))
-            .orElseThrow(() -> new ResourceNotFoundException("No data found"))
+            .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"))
             .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
             .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
   }

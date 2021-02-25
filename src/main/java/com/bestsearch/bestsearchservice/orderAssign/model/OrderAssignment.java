@@ -43,12 +43,14 @@ public class OrderAssignment extends Auditable<String> {
   private OrderType orderType;
   private int priority;
   private int offsetPaginate;
+  private String userComment;
 
   @JsonIgnore
   public OrderAssignmentDTO viewAsOrderAssignmentDTO() {
     return OrderAssignmentDTO.builder().id(id).orderId(orderId).organizationId(organizationId)
             .assignedAt(assignedAt).assignedStatus(assignedStatus).orderType(orderType)
             .priority(priority)
+            .userComment(userComment)
             .build();
   }
 }

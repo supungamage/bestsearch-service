@@ -96,18 +96,11 @@ public class OrderController {
             @RequestParam("organizationTypeId") Long organizationTypeId,
             @RequestParam("longitude") Double longitude,
             @RequestParam("latitude") Double latitude,
-            @RequestParam("organizationId") Long organizationId,
-            @RequestParam("userComment") String userComment,
+            @RequestParam(value = "organizationId", required = false) Long organizationId,
+            @RequestParam(value = "userComment", required = false) String userComment,
             @RequestParam("files") MultipartFile files[]) {
 
-//        return Arrays.asList(files)
-//            .stream()
-//            .map(this::uploadFile)
-//            .collect(Collectors.toList());
-
         List<String> images = new ArrayList<String>();
-
-
         for (MultipartFile multipartFile : files) {
             images.add(this.uploadService.uploadFile(multipartFile));
         }
