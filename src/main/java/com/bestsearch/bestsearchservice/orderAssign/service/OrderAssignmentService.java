@@ -30,14 +30,14 @@ public class OrderAssignmentService {
   private final String timeFlyPeriod;
 
   public OrderAssignmentService(final OrderAssignmentRepository orderAssignmentRepository,
-                                final OrderAssignmentMapper orderAssignmentMapper,
-                                @Value("${order.assignment.timeFly.hours}") String timeFlyPeriod) {
+      final OrderAssignmentMapper orderAssignmentMapper,
+      @Value("${order.assignment.timeFly.hours}") String timeFlyPeriod) {
     this.orderAssignmentRepository = orderAssignmentRepository;
     this.orderAssignmentMapper = orderAssignmentMapper;
     this.timeFlyPeriod = timeFlyPeriod;
   }
 
-  public void saveOrderAssignments(List<OrderAssignment> assignments){
+  public void saveOrderAssignments(List<OrderAssignment> assignments) {
     orderAssignmentRepository.saveAll(assignments);
   }
 
@@ -51,40 +51,50 @@ public class OrderAssignmentService {
 
   public List<OrderAssignmentDTO> findByOrderId(long orderId) {
     return orderAssignmentRepository.findByOrderId(orderId).stream()
-            .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());
+        .map(OrderAssignment::viewAsOrderAssignmentDTO).collect(Collectors.toList());
+  }
+
+  public List<OrderAssignment> findOrderAssginmentsByOrderId(long orderId) {
+    return orderAssignmentRepository.findByOrderId(orderId);
   }
 
   public List<OrderAssignment> findTimeFlyOrders(OrderType orderType) {
     LocalDateTime timeFlyTime = LocalDateTime.now().minusHours(Integer.valueOf(timeFlyPeriod));
-    return orderAssignmentRepository.findByAssignedStatusAndOrderTypeAndAssignedAtBefore(Status.PENDING, orderType, timeFlyTime);
+    return orderAssignmentRepository
+        .findByAssignedStatusAndOrderTypeAndAssignedAtBefore(Status.PENDING, orderType,
+            timeFlyTime);
   }
 
   public OrderAssignment findNextAssignment(long orderId, Status orderAssignStatus, int priority) {
-    return orderAssignmentRepository.findByOrderIdAndAssignedStatusAndPriority(orderId, orderAssignStatus, priority);
+    return orderAssignmentRepository
+        .findByOrderIdAndAssignedStatusAndPriority(orderId, orderAssignStatus, priority);
   }
 
   public List<OrderAssignment> findByOrderIdAndAssignedStatus(long orderId, Status assignedStatus) {
     return orderAssignmentRepository.findByOrderIdAndAssignedStatus(orderId, assignedStatus)
-            .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"));
   }
 
-  public List<OrderAssignment> findByOrderIdAndAssignedStatuses(long orderId, List<Status> assignedStatuses) {
+  public List<OrderAssignment> findByOrderIdAndAssignedStatuses(long orderId,
+      List<Status> assignedStatuses) {
     return orderAssignmentRepository.findByOrderIdAndAssignedStatuses(orderId, assignedStatuses)
-            .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"));
   }
 
   public Map<LocalDate, List<OrderAssignmentDTO>> getCurrentAssignments(long organizationId) {
-    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.PENDING, Status.ACCEPTED))
-            .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"))
-            .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
-            .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
+    return orderAssignmentRepository
+        .getAssignmentsByStatuses(organizationId, List.of(Status.PENDING, Status.ACCEPTED))
+        .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"))
+        .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
+        .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
   }
 
   public Map<LocalDate, List<OrderAssignmentDTO>> getPastAssignments(long organizationId) {
-    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId, List.of(Status.REJECTED, Status.COMPLETED, Status.NO_RESPONSE))
-            .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"))
-            .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
-            .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
+    return orderAssignmentRepository.getAssignmentsByStatuses(organizationId,
+        List.of(Status.REJECTED, Status.COMPLETED, Status.NO_RESPONSE))
+        .orElseThrow(() -> new ResourceNotFoundException("Assignments not found"))
+        .stream().map(OrderAssignment::viewAsOrderAssignmentDTO)
+        .collect(Collectors.groupingBy(OrderAssignmentDTO::getAssignedDate));
   }
 
   public OrderAssignmentDTO updateOrderAssignment(long orderAssignmentId, String status) {
@@ -93,7 +103,8 @@ public class OrderAssignmentService {
             .build()).viewAsOrderAssignmentDTO();
   }
 
-  public void updateOrderAssignmentByOrderAndStatus(long orderId, Status toStatus, List<Status> fromStatues) {
+  public void updateOrderAssignmentByOrderAndStatus(long orderId, Status toStatus,
+      List<Status> fromStatues) {
     orderAssignmentRepository.updateOrderAssignmentByOrderId(orderId, toStatus, fromStatues);
   }
 }

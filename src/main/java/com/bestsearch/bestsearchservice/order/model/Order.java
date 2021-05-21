@@ -23,47 +23,51 @@ import java.time.temporal.ChronoUnit;
 @SuperBuilder
 @NoArgsConstructor
 public class Order extends Auditable<String> {
-    @Id
-    private long id;
 
-    private String orderRef;
-    private long userId;
+  @Id
+  private long id;
 
-    @Enumerated(EnumType.ORDINAL)
-    private OrderType orderType;
+  private String orderRef;
+  private long userId;
 
-    @Enumerated(EnumType.ORDINAL)
-    private Status status;
+  @Enumerated(EnumType.ORDINAL)
+  private OrderType orderType;
 
-    private long organizationTypeId;
+  @Enumerated(EnumType.ORDINAL)
+  private Status status;
 
-    @NonNull
-    private Double longitude;
+  private long organizationTypeId;
 
-    @NonNull
-    private Double latitude;
+  @NonNull
+  private Double longitude;
 
-    private Long organizationId;
+  @NonNull
+  private Double latitude;
 
-    private LocalDateTime orderedAt;
+  private Long organizationId;
 
-    private String userComment;
+  private LocalDateTime orderedAt;
 
-    @ElementCollection
-    private List<String> images;
+  private String userComment;
 
-    @JsonIgnore
-    public OrderOutputDTO viewAsOrderOutputDTO() {
-        return OrderOutputDTO.builder().id(id).orderRef(orderRef).userId(userId).orderType(orderType)
-                .status(status).latitude(latitude).longitude(longitude)
-                .organizationTypeId(organizationTypeId)
-                .organizationId(organizationId)
-                .orderedAt(orderedAt)
-                .period(ChronoUnit.HOURS.between(orderedAt, LocalDateTime.now()) < 24
-                        ? ChronoUnit.HOURS.between(orderedAt, LocalDateTime.now())
-                        : -1)
-                .images(images)
-                .userComment(userComment)
-                .build();
-    }
+  private Boolean alternateDrugsAllowed;
+
+  @ElementCollection
+  private List<String> images;
+
+  @JsonIgnore
+  public OrderOutputDTO viewAsOrderOutputDTO() {
+    return OrderOutputDTO.builder().id(id).orderRef(orderRef).userId(userId).orderType(orderType)
+        .status(status).latitude(latitude).longitude(longitude)
+        .organizationTypeId(organizationTypeId)
+        .organizationId(organizationId)
+        .orderedAt(orderedAt)
+        .period(ChronoUnit.HOURS.between(orderedAt, LocalDateTime.now()) < 24
+            ? ChronoUnit.HOURS.between(orderedAt, LocalDateTime.now())
+            : -1)
+        .images(images)
+        .userComment(userComment)
+        .alternateDrugsAllowed(alternateDrugsAllowed)
+        .build();
+  }
 }

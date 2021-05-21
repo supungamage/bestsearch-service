@@ -20,50 +20,63 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @SuperBuilder
 public class OrderOutputDTO {
-    @JsonView(OrderOutputViews.Public.class)
-    private long id;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private String orderRef;
+  @JsonView(OrderOutputViews.Public.class)
+  private long id;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private long userId;
+  @JsonView(OrderOutputViews.Public.class)
+  private String orderRef;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private OrderType orderType;
+  @JsonView(OrderOutputViews.Public.class)
+  private long userId;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private Status status;
+  @JsonView(OrderOutputViews.Public.class)
+  private OrderType orderType;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private long organizationTypeId;
+  @JsonView(OrderOutputViews.Public.class)
+  private Status status;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private Double longitude;
+  @JsonView(OrderOutputViews.Public.class)
+  private long organizationTypeId;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private Double latitude;
+  @JsonView(OrderOutputViews.Public.class)
+  private Double longitude;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private long organizationId;
+  @JsonView(OrderOutputViews.Public.class)
+  private Double latitude;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private OrganizationDTO organizationDTO;
+  @JsonView(OrderOutputViews.Public.class)
+  private long organizationId;
 
-    @JsonView(OrderOutputViews.Internal.class)
-    private LocalDateTime orderedAt;
+  @JsonView(OrderOutputViews.Public.class)
+  private OrganizationDTO organizationDTO;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private long period;
+  @JsonView(OrderOutputViews.Internal.class)
+  private LocalDateTime orderedAt;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private String userComment;
+  @JsonView(OrderOutputViews.Public.class)
+  private long period;
 
-    @JsonView(OrderOutputViews.Public.class)
-    private List<String> images;
+  @JsonView(OrderOutputViews.Public.class)
+  private String userComment;
 
-    @JsonIgnore
-    public LocalDate getOrderDate() {
-        return orderedAt.toLocalDate();
-    }
+  @JsonView(OrderOutputViews.Public.class)
+  private Boolean alternateDrugsAllowed;
+
+  @JsonView(OrderOutputViews.Public.class)
+  private List<String> images;
+
+  @JsonIgnore
+  public LocalDate getOrderDate() {
+    return orderedAt.toLocalDate();
+  }
+
+  @JsonView(OrderOutputViews.Public.class)
+  private Double originalPrice;
+
+  @JsonView(OrderOutputViews.Public.class)
+  private Double alternatePrice;
+
+  @JsonView(OrderOutputViews.Public.class)
+  private String additionalDetails;
 }

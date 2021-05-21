@@ -9,6 +9,7 @@ import com.bestsearch.bestsearchservice.order.service.OrderImageUploadService;
 import com.bestsearch.bestsearchservice.order.service.OrderService;
 import java.util.ArrayList;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.http.ResponseEntity;
@@ -22,62 +23,68 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/orders")
 public class OrderController {
 
-    private final OrderService orderService;
+  private final OrderService orderService;
 
-    private final OrderImageUploadService uploadService;
+  private final OrderImageUploadService uploadService;
 
-    public OrderController(final OrderService orderService, final OrderImageUploadService uploadService) {
-        this.orderService = orderService;
-        this.uploadService = uploadService;
-    }
+  public OrderController(final OrderService orderService,
+      final OrderImageUploadService uploadService) {
+    this.orderService = orderService;
+    this.uploadService = uploadService;
+  }
 
-    @PostMapping
-    public ResponseEntity<OrderOutputDTO> addOrder(@RequestBody OrderCreateDTO orderCreateDTO) {
-        return ResponseEntity.ok(this.orderService.saveOrder(orderCreateDTO));
-    }
+  @PostMapping
+  public ResponseEntity<OrderOutputDTO> addOrder(@RequestBody OrderCreateDTO orderCreateDTO) {
+    return ResponseEntity.ok(this.orderService.saveOrder(orderCreateDTO));
+  }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<OrderOutputDTO> updateOrder(
-            @PathVariable("id") long id,
-            @RequestBody OrderInputDTO orderInputDTO) {
-        return ResponseEntity.ok(this.orderService.updateOrder(id, orderInputDTO));
-    }
+  @PutMapping("/{id}")
+  public ResponseEntity<OrderOutputDTO> updateOrder(
+      @PathVariable("id") long id,
+      @RequestBody OrderInputDTO orderInputDTO) {
+    return ResponseEntity.ok(this.orderService.updateOrder(id, orderInputDTO));
+  }
 
-    @GetMapping
-    public ResponseEntity<List<OrderOutputDTO>> getOrders() {
-        return ResponseEntity.ok(this.orderService.getOrders());
-    }
+  @GetMapping
+  public ResponseEntity<List<OrderOutputDTO>> getOrders() {
+    return ResponseEntity.ok(this.orderService.getOrders());
+  }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<OrderOutputDTO> getOrderById(@PathVariable("id") long id) {
-        return ResponseEntity.ok(this.orderService.getOrderById(id));
-    }
+  @GetMapping("/{id}")
+  public ResponseEntity<OrderOutputDTO> getOrderById(@PathVariable("id") long id) {
+    return ResponseEntity.ok(this.orderService.getOrderById(id));
+  }
 
-    @GetMapping("/byRef")
-    public ResponseEntity<OrderOutputDTO> getOrderByRef(
-            @RequestParam String orderRef,
-            @RequestParam long organizationTypeId) {
-        return ResponseEntity.ok(this.orderService.getOrderByRef(orderRef, organizationTypeId));
-    }
+  @GetMapping("/byRef")
+  public ResponseEntity<OrderOutputDTO> getOrderByRef(
+      @RequestParam String orderRef,
+      @RequestParam long organizationTypeId) {
+    return ResponseEntity.ok(this.orderService.getOrderByRef(orderRef, organizationTypeId));
+  }
 
-    @JsonView(OrderOutputViews.Public.class)
-    @GetMapping("/current")
-    public ResponseEntity<List<OrderAndPeriodDTO>> getCurrentOrders(
-            @RequestParam long orgTypeId,
-            @RequestParam long userId) {
-        return ResponseEntity.ok(this.orderService.getCurrentOrders(orgTypeId, userId));
-    }
+  @JsonView(OrderOutputViews.Public.class)
+  @GetMapping("/current")
+  public ResponseEntity<List<OrderAndPeriodDTO>> getCurrentOrders(
+      @RequestParam long orgTypeId,
+      @RequestParam long userId) {
+//    return ResponseEntity.ok(this.orderService.getCurrentOrders(orgTypeId, userId));
+    List<OrderAndPeriodDTO> a = this.orderService.getCurrentOrders(orgTypeId, userId);
+    ResponseEntity<List<OrderAndPeriodDTO>> response = new ResponseEntity<List<OrderAndPeriodDTO>>(
+        a,
+        HttpStatus.valueOf(200));
+    return response;
+  }
 
-    @JsonView(OrderOutputViews.Public.class)
-    @GetMapping("/past")
-    public ResponseEntity<List<OrderAndPeriodDTO>> getPastOrders(
-            @RequestParam long orgTypeId,
-            @RequestParam long userId) {
-        return ResponseEntity.ok(this.orderService.getPastOrders(orgTypeId, userId));
-    }
+  @JsonView(OrderOutputViews.Public.class)
+  @GetMapping("/past")
+  public ResponseEntity<List<OrderAndPeriodDTO>> getPastOrders(
+      @RequestParam long orgTypeId,
+      @RequestParam long userId) {
+    return ResponseEntity.ok(this.orderService.getPastOrders(orgTypeId, userId));
+  }
 
-    @PostMapping("/uploadFile")
-    public UploadFileResponse uploadFile(@RequestParam("file") MultipartFile file) {
+  @PostMapping("/uploadFile")
+  public UploadFileResponse uploadFile(@RequestParam("file") MultipartFile file) {
 //        String fileName = fileStorageService.storeFile(file);
 
 //        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
@@ -86,35 +93,38 @@ public class OrderController {
 //            .toUriString();
 
 //        return new UploadFileResponse(fileName, fileDownloadUri,file.getContentType(), file.getSize());
-        return null;
-    }
+    return null;
+  }
 
-    @RequestMapping(value = "/add", method = RequestMethod.POST,  consumes = { MediaType.MULTIPART_FORM_DATA_VALUE }, produces = { MediaType.APPLICATION_JSON_VALUE })
-    public ResponseEntity<OrderOutputDTO> addOrder(
-            @RequestParam("userId") Long userId,
-            @RequestParam("orderType") OrderType orderType,
-            @RequestParam("organizationTypeId") Long organizationTypeId,
-            @RequestParam("longitude") Double longitude,
-            @RequestParam("latitude") Double latitude,
-            @RequestParam(value = "organizationId", required = false) Long organizationId,
-            @RequestParam(value = "userComment", required = false) String userComment,
-            @RequestParam("files") MultipartFile files[]) {
+  @RequestMapping(value = "/add", method = RequestMethod.POST, consumes = {
+      MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+  public ResponseEntity<OrderOutputDTO> addOrder(
+      @RequestParam("userId") Long userId,
+      @RequestParam("orderType") OrderType orderType,
+      @RequestParam("organizationTypeId") Long organizationTypeId,
+      @RequestParam("longitude") Double longitude,
+      @RequestParam("latitude") Double latitude,
+      @RequestParam(value = "organizationId", required = false) Long organizationId,
+      @RequestParam(value = "userComment", required = false) String userComment,
+      @RequestParam("alternateDrugsAllowed") Boolean alternateDrugsAllowed,
+      @RequestParam("files") MultipartFile files[]) {
 
-        List<String> images = new ArrayList<String>();
-        for (MultipartFile multipartFile : files) {
-            images.add(this.uploadService.uploadFile(multipartFile));
-        }
+    List<String> images = new ArrayList<String>();
+//    for (MultipartFile multipartFile : files) {
+//      images.add(this.uploadService.uploadFile(multipartFile));
+//    }
 
-        return ResponseEntity.ok(this.orderService.saveOrder(OrderCreateDTO.builder()
-            .userId(userId)
-            .orderType(orderType)
-            .organizationTypeId(organizationTypeId)
-            .longitude(longitude)
-            .latitude(latitude)
-            .organizationId(organizationId)
-            .userComment(userComment)
-            .images(images)
-            .build()));
-    }
+    return ResponseEntity.ok(this.orderService.saveOrder(OrderCreateDTO.builder()
+        .userId(userId)
+        .orderType(orderType)
+        .organizationTypeId(organizationTypeId)
+        .longitude(longitude)
+        .latitude(latitude)
+        .organizationId(organizationId)
+        .userComment(userComment)
+        .alternateDrugsAllowed(alternateDrugsAllowed)
+        .images(images)
+        .build()));
+  }
 
 }

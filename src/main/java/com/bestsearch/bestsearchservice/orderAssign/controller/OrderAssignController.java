@@ -46,6 +46,7 @@ public class OrderAssignController {
   public ResponseEntity<OrderAssignmentDTO> updateOrderAssignment(
       @PathVariable("id") long id,
       @RequestBody OrderAssignmentDTO orderAssignmentDTO) {
+    orderAssignmentDTO.setId(id); // TODO: do we really need to do this way
     return ResponseEntity
         .ok(new MatchingContext(matchingFactory.getMatch(orderAssignmentDTO.getOrderType()))
             .doMatch(orderAssignmentDTO));

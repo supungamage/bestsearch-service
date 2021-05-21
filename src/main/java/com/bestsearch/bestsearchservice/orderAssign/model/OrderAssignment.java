@@ -6,12 +6,16 @@ import com.bestsearch.bestsearchservice.orderAssign.dto.OrderAssignmentDTO;
 import com.bestsearch.bestsearchservice.share.audit.Auditable;
 
 import java.time.LocalDateTime;
+import java.util.Set;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
@@ -30,9 +34,10 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderAssignment extends Auditable<String> {
+
   @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="order_assign_seq")
-  @SequenceGenerator(name = "order_assign_seq", sequenceName = "order_assign_seq" ,allocationSize = 1)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "order_assign_seq")
+  @SequenceGenerator(name = "order_assign_seq", sequenceName = "order_assign_seq", allocationSize = 1)
   private Long id;
   private Long orderId;
   private Long organizationId;
@@ -48,9 +53,9 @@ public class OrderAssignment extends Auditable<String> {
   @JsonIgnore
   public OrderAssignmentDTO viewAsOrderAssignmentDTO() {
     return OrderAssignmentDTO.builder().id(id).orderId(orderId).organizationId(organizationId)
-            .assignedAt(assignedAt).assignedStatus(assignedStatus).orderType(orderType)
-            .priority(priority)
-            .userComment(userComment)
-            .build();
+        .assignedAt(assignedAt).assignedStatus(assignedStatus).orderType(orderType)
+        .priority(priority)
+        .userComment(userComment)
+        .build();
   }
 }

@@ -11,6 +11,8 @@ import com.bestsearch.bestsearchservice.orderAssign.mapper.OrderAssignmentMapper
 import com.bestsearch.bestsearchservice.orderAssign.model.OrderAssignment;
 import com.bestsearch.bestsearchservice.orderAssign.producer.OrderProducer;
 import com.bestsearch.bestsearchservice.orderAssign.service.OrderAssignmentService;
+import com.bestsearch.bestsearchservice.orderPrice.model.OrderPrice;
+import com.bestsearch.bestsearchservice.orderPrice.service.OrderPriceService;
 import com.bestsearch.bestsearchservice.organization.dto.OrganizationOutputDTO;
 import com.bestsearch.bestsearchservice.organization.service.OrganizationService;
 
@@ -24,6 +26,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -41,19 +44,22 @@ public class MatchClosest implements IMatchBehaviour {
 
   private final OrderProducer orderProducer;
 
+  private final OrderPriceService orderPricerService;
+
 
   public MatchClosest(final OrganizationService organizationService,
       final OrderAssignmentService orderAssignmentService,
       final SimpMessagingTemplate simpMessagingTemplate,
       final OrderAssignmentMapper orderAssignmentMapper,
       final OrderService orderService,
-      final OrderProducer orderProducer) {
+      final OrderProducer orderProducer, final OrderPriceService orderPricerService) {
     this.organizationService = organizationService;
     this.orderAssignmentService = orderAssignmentService;
     this.simpMessagingTemplate = simpMessagingTemplate;
     this.orderAssignmentMapper = orderAssignmentMapper;
     this.orderService = orderService;
     this.orderProducer = orderProducer;
+    this.orderPricerService = orderPricerService;
   }
 
   @Override
@@ -76,11 +82,18 @@ public class MatchClosest implements IMatchBehaviour {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     UserAdditionalInfo userAdditionalInfo = (UserAdditionalInfo) authentication.getDetails();
     orderAssignment.setOrganizationId(Long.valueOf(userAdditionalInfo.getInternalId()));
-    
+
     if (orderAssignmentDTO.getAssignedStatus() == Status.REJECTED) {
       handleReject(orderAssignment);
     } else if (orderAssignmentDTO.getAssignedStatus() == Status.ACCEPTED) {
-      handleAccept(orderAssignment);
+      OrderPrice orderPrice = OrderPrice.builder()
+          .orderId(orderAssignment.getOrderId())
+          .orderAssignmentId(orderAssignment.getId())
+          .alternatePrice(orderAssignmentDTO.getAlternatePrice())
+          .originalPrice(orderAssignmentDTO.getOriginalPrice())
+          .additionalDetails(orderAssignmentDTO.getAdditionalDetails())
+          .build();
+      handleAccept(orderAssignment, orderPrice);
     }
 
     return orderAssignmentDTO;
@@ -138,9 +151,10 @@ public class MatchClosest implements IMatchBehaviour {
     simpMessagingTemplate.convertAndSend("/topic/hello", toBeSentAssignments);
   }
 
-  private void handleAccept(OrderAssignment orderAssignment) {
+  @Transactional
+  private void handleAccept(OrderAssignment orderAssignment, OrderPrice orderPrice) {
     List<OrderAssignment> initialAssignments = orderAssignmentService
-        .findByOrderIdAndAssignedStatus(orderAssignment.getOrderId(), Status.INITIAL);
+        .findOrderAssginmentsByOrderId(orderAssignment.getOrderId());
     if (Objects.nonNull(initialAssignments)) {
       List<OrderAssignment> toBeSavedAssignments = new ArrayList<>();
 
@@ -151,6 +165,8 @@ public class MatchClosest implements IMatchBehaviour {
         } else {
           initialAssignment.setAssignedStatus(Status.ACCEPTED);
           acceptedAssignment = initialAssignment;
+          orderPricerService.saveOrderPrice(orderPrice);
+
         }
         toBeSavedAssignments.add(initialAssignment);
       }
@@ -188,9 +204,10 @@ public class MatchClosest implements IMatchBehaviour {
   }
 
   private void addOrUpdate(OrderOutputDTO orderOutputDTO) {
-    List<OrderAssignmentDTO> orderAssignmentDTOS = orderAssignmentService.findByOrderId(orderOutputDTO.getId());
+    List<OrderAssignmentDTO> orderAssignmentDTOS = orderAssignmentService
+        .findByOrderId(orderOutputDTO.getId());
 
-    if(Objects.isNull(orderAssignmentDTOS) || orderAssignmentDTOS.isEmpty()) {
+    if (Objects.isNull(orderAssignmentDTOS) || orderAssignmentDTOS.isEmpty()) {
       this.add(orderOutputDTO);
     } else {
       this.update(orderOutputDTO);
@@ -200,30 +217,31 @@ public class MatchClosest implements IMatchBehaviour {
   private void add(OrderOutputDTO orderOutputDTO) {
     log.info("Adding new closest assignments:", orderOutputDTO.getOrderRef());
     List<OrderAssignment> orderAssignments = this.getNewAssignments(
-            0, // initial offset
-            orderOutputDTO
+        0, // initial offset
+        orderOutputDTO
     );
 
     orderAssignmentService.saveOrderAssignments(orderAssignments);
     simpMessagingTemplate.convertAndSend("/topic/hello", List.of(
-            orderAssignmentMapper.toOrderAssignmentDTO(orderAssignments.get(0))));
+        orderAssignmentMapper.toOrderAssignmentDTO(orderAssignments.get(0))));
   }
 
   private void update(OrderOutputDTO orderOutputDTO) {
     log.info("Updating closest assignments:", orderOutputDTO.getOrderRef());
     List<OrderAssignment> assignmentsTobeUpdated = orderAssignmentService
-            .findByOrderIdAndAssignedStatuses(orderOutputDTO.getId(), List.of(Status.PENDING, Status.INITIAL, Status.ACCEPTED));
+        .findByOrderIdAndAssignedStatuses(orderOutputDTO.getId(),
+            List.of(Status.PENDING, Status.INITIAL, Status.ACCEPTED));
     List<OrderAssignment> tobeSentAssignments = new ArrayList<>();
     assignmentsTobeUpdated.forEach(orderAssignment -> {
       orderAssignment.setUserComment(orderOutputDTO.getUserComment());
-      if(!orderAssignment.getAssignedStatus().equals(Status.INITIAL)) {
+      if (!orderAssignment.getAssignedStatus().equals(Status.INITIAL)) {
         tobeSentAssignments.add(orderAssignment);
       }
     });
 
     orderAssignmentService.saveOrderAssignments(assignmentsTobeUpdated);
     simpMessagingTemplate.convertAndSend("/topic/hello", tobeSentAssignments.stream()
-            .map(OrderAssignment::viewAsOrderAssignmentDTO));
+        .map(OrderAssignment::viewAsOrderAssignmentDTO));
   }
 
   private void completeOrder(OrderOutputDTO orderOutputDTO) {

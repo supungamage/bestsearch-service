@@ -15,12 +15,14 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 public class OrderCreateDTO {
-    private Long userId;
-    private OrderType orderType;
-    private Long organizationTypeId;
-    private Double longitude;
-    private Double latitude;
-    private Long organizationId;
-    private String userComment;
-    private List<String> images;
+
+  private Long userId;
+  private OrderType orderType;
+  private Long organizationTypeId;
+  private Double longitude;
+  private Double latitude;
+  private Long organizationId;
+  private String userComment;
+  private Boolean alternateDrugsAllowed;
+  private List<String> images;
 }
