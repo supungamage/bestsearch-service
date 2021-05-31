@@ -127,4 +127,12 @@ public class OrderController {
         .build()));
   }
 
+  @PostMapping("/{id}/pay")
+  public UploadFileResponse doPayment(@RequestBody OrderCreateDTO orderCreateDTO) {
+
+    return null;
+  }
+
+
+
 }
